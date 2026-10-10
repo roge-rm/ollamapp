@@ -13,7 +13,7 @@ trap 'rm -rf "$tmp"' EXIT
 # One big render of the 108x108 adaptive canvas, then everything is cut from it.
 inkscape "$here/llama-foreground.svg" --export-type=png --export-filename="$tmp/fg.png" -w 1296 -h 1296 2>/dev/null
 # Launchers show the middle 72 of the 108 units.
-magick -size 1296x1296 xc:"$green" "$tmp/fg.png" -composite -gravity center -crop 864x864+0+0 +repage "$tmp/face.png"
+magick -size 1296x1296 xc:"$green" "$tmp/fg.png" -composite -gravity center -crop 864x864+0+0 +repage -alpha set "$tmp/face.png"
 magick "$tmp/face.png" \( -size 864x864 xc:none -fill white -draw "circle 432,432 432,0" \) -compose DstIn -composite "$tmp/round.png"
 magick "$tmp/face.png" \( -size 864x864 xc:none -fill white -draw "roundrectangle 0,0 863,863 190,190" \) -compose DstIn -composite "$tmp/square.png"
 
