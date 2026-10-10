@@ -93,8 +93,8 @@ android {
         applicationId "com.rm.ollamapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1791224063
-        versionName "0.0.112"
+        versionCode 1
+        versionName "0.1.0"
     }
     signingConfigs {
         debug {
