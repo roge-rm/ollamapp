@@ -90,12 +90,7 @@ export const AutoSetupScreen: React.FC<Props> = ({
         contentContainerStyle={styles.content}
         testID="auto-setup-screen"
       >
-        <Text style={styles.eyebrow}>AUTO SETUP</Text>
-        <Text style={styles.title}>Your private AI, ready in one step.</Text>
-        <Text style={styles.secondary}>
-          Choose how much capability you want. Every option is safe for this
-          device.
-        </Text>
+        <Text style={styles.title}>Set up models</Text>
 
         {snapshot.error && (
           <Card style={styles.errorCard}>
@@ -254,7 +249,6 @@ const createStyles = (colors: ThemeColors, _shadows: ThemeShadows) => ({
     gap: SPACING.md,
     padding: SPACING.xl,
   },
-  eyebrow: { ...TYPOGRAPHY.label, color: colors.primary },
   title: { ...TYPOGRAPHY.h2, color: colors.text },
   secondary: { ...TYPOGRAPHY.body, color: colors.textSecondary },
   planGrid: { gap: SPACING.sm },

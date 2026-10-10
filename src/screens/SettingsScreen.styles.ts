@@ -124,30 +124,6 @@ export const createStyles = (colors: ThemeColors, shadows: ThemeShadows) => ({
     color: colors.textMuted,
     lineHeight: 18,
   },
-  privacyCard: {
-    alignItems: 'center' as const,
-    backgroundColor: colors.surface,
-  },
-  privacyIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: SPACING.md,
-  },
-  privacyTitle: {
-    ...TYPOGRAPHY.h3,
-    color: colors.text,
-    marginBottom: SPACING.sm,
-  },
-  privacyText: {
-    ...TYPOGRAPHY.body,
-    color: colors.textSecondary,
-    textAlign: 'center' as const,
-    lineHeight: 20,
-  },
   devButton: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,

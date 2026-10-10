@@ -136,22 +136,9 @@ export const EmptyChat: React.FC<{
   activeProject: any;
   setShowProjectSelector: (v: boolean) => void;
   isRemote?: boolean;
-}> = ({ styles, colors, activeModel, activeModelName, activeProject, setShowProjectSelector, isRemote }) => (
+}> = ({ styles, activeProject, setShowProjectSelector }) => (
   <View style={styles.emptyChat}>
     <AnimatedEntry index={0} staggerMs={60}>
-      <View style={styles.emptyChatIconContainer}>
-        <Icon name="message-square" size={32} color={colors.textMuted} />
-      </View>
-    </AnimatedEntry>
-    <AnimatedEntry index={1} staggerMs={60}>
-      <Text style={styles.emptyChatTitle}>Start a Conversation</Text>
-    </AnimatedEntry>
-    <AnimatedEntry index={2} staggerMs={60}>
-      <Text style={styles.emptyChatText}>
-        Type a message below to begin chatting with {activeModelName || activeModel?.name || 'Unknown'}.
-      </Text>
-    </AnimatedEntry>
-    <AnimatedEntry index={3} staggerMs={60}>
       <TouchableOpacity style={styles.projectHint} onPress={() => setShowProjectSelector(true)}>
         <View style={styles.projectHintIcon}>
           <Text style={styles.projectHintIconText}>
@@ -162,13 +149,6 @@ export const EmptyChat: React.FC<{
           Project: {activeProject?.name || 'Default'} — tap to change
         </Text>
       </TouchableOpacity>
-    </AnimatedEntry>
-    <AnimatedEntry index={4} staggerMs={60}>
-      <Text style={styles.privacyText}>
-        {isRemote
-          ? 'This conversation uses a remote model. Your messages will be sent to the remote server.'
-          : 'This conversation is completely private. All processing happens on your device.'}
-      </Text>
     </AnimatedEntry>
   </View>
 );

@@ -172,14 +172,6 @@ describe('SettingsScreen', () => {
     // The three theme options are rendered - pressing one calls setThemeMode
   });
 
-  it('renders Privacy First section', () => {
-    const { getByText } = render(<SettingsScreen />);
-    expect(getByText('Privacy First')).toBeTruthy();
-    expect(
-      getByText(/All your data stays on this device/),
-    ).toBeTruthy();
-  });
-
   it('renders about section text', () => {
     const { getByText } = render(<SettingsScreen />);
     expect(getByText('About')).toBeTruthy();

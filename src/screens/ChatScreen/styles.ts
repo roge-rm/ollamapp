@@ -94,19 +94,6 @@ const createScrollStyles = (colors: ThemeColors) => ({
 
 const createEmptyChatStyles = (colors: ThemeColors) => ({
   emptyChat: { flex: 1, justifyContent: 'center' as const, alignItems: 'center' as const, paddingHorizontal: 32 },
-  emptyChatIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: SPACING.lg,
-  },
-  emptyChatTitle: { ...TYPOGRAPHY.h2, color: colors.text, marginBottom: SPACING.sm },
-  emptyChatText: { ...TYPOGRAPHY.body, color: colors.textSecondary, textAlign: 'center' as const, marginBottom: SPACING.xl },
   projectHint: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -127,7 +114,6 @@ const createEmptyChatStyles = (colors: ThemeColors) => ({
   },
   projectHintIconText: { ...TYPOGRAPHY.bodySmall, fontWeight: '600' as const, color: colors.primary },
   projectHintText: { ...TYPOGRAPHY.h3, color: colors.primary, fontWeight: '500' as const },
-  privacyText: { ...TYPOGRAPHY.h3, color: colors.textMuted, textAlign: 'center' as const, maxWidth: 300 },
 });
 
 const createStateScreenStyles = (colors: ThemeColors) => ({
