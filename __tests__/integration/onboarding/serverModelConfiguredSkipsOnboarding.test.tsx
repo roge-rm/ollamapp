@@ -104,10 +104,8 @@ describe('T095 — server + model configured → tap Continue → routes into th
     resetStores();
     // Fresh remote-server slate so the added server is the only row.
     useRemoteServerStore.setState({ servers: [], serverHealth: {}, discoveredModels: {} });
-    // Onboarding slides already done + NO on-device model downloaded → the initial route is the remaining
-    // onboarding step, Auto Setup (per AppNavigator's initial-route logic). This is BOOT state, not a
-    // fabrication of the tested outcome — the outcome (skipping to Main) is produced by the gestures below.
-    useAppStore.setState({ hasCompletedOnboarding: true, downloadedModels: [], deviceInfo: createDeviceInfo() });
+    // First launch: setup not seen yet, so the initial route is Auto Setup.
+    useAppStore.setState({ hasCompletedOnboarding: false, downloadedModels: [], deviceInfo: createDeviceInfo() });
   });
 
   it('moves from Auto Setup through Advanced Setup and lands on Home after a server connects', async () => {

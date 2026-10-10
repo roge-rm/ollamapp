@@ -1,4 +1,3 @@
-export { OnboardingScreen } from './OnboardingScreen';
 export { AdvancedSetupScreen } from './ModelDownloadScreen';
 export { AutoSetupScreen } from './AutoSetupScreen';
 export { HomeScreen } from './HomeScreen';

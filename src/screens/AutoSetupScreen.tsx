@@ -12,6 +12,7 @@ import {
   createAutoSetupSession,
   type AutoSetupSession,
 } from '../services/autoSetupService';
+import { useAppStore } from '../stores';
 import { useTheme, useThemedStyles } from '../theme';
 import type { ThemeColors, ThemeShadows } from '../theme';
 
@@ -43,6 +44,12 @@ export const AutoSetupScreen: React.FC<Props> = ({
   const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
+
+  // Setup shows once, on first launch. After that the app opens on Home.
+  const setOnboardingComplete = useAppStore(s => s.setOnboardingComplete);
+  useEffect(() => {
+    setOnboardingComplete(true);
+  }, [setOnboardingComplete]);
 
   useEffect(() => {
     session.load().catch(() => undefined);

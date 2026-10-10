@@ -75,12 +75,12 @@ export const SettingsScreen: React.FC = () => {
 
   const handleResetOnboarding = () => {
     setOnboardingComplete(false);
-    // Navigate to root stack and reset to Onboarding
+    // Back to first-launch setup
     // getParent() reaches the RootStack from inside the Tab navigator
     navigation.getParent()?.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'Onboarding' }],
+        routes: [{ name: 'AutoSetup' }],
       }),
     );
   };

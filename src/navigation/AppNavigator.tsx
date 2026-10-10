@@ -14,7 +14,6 @@ import type { ThemeColors, ThemeShadows } from '../theme';
 import { triggerHaptic } from '../utils/haptics';
 import { useAppStore } from '../stores';
 import {
-  OnboardingScreen,
   AutoSetupScreen,
   AdvancedSetupScreen,
   HomeScreen,
@@ -187,16 +186,11 @@ const MainTabs: React.FC = () => {
 export const AppNavigator: React.FC = () => {
   const { colors } = useTheme();
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
-  const downloadedModels = useAppStore((s) => s.downloadedModels);
   // Reactive: screens registered at runtime (Pro activation re-runs loadProFeatures)
   // mount as real routes live, so navigate('McpServers') works without an app restart.
   const registeredScreens = useRegisteredScreens();
 
-  // Determine initial route
-  let initialRoute: keyof RootStackParamList = 'Onboarding';
-  if (hasCompletedOnboarding) {
-    initialRoute = downloadedModels.length > 0 ? 'Main' : 'AutoSetup';
-  }
+  const initialRoute: keyof RootStackParamList = hasCompletedOnboarding ? 'Main' : 'AutoSetup';
 
   return (
       <RootStack.Navigator
@@ -210,7 +204,6 @@ export const AppNavigator: React.FC = () => {
           gestureDirection: 'horizontal',
         }}
       >
-        <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
         <RootStack.Screen name="AutoSetup" component={AutoSetupScreen} />
         <RootStack.Screen name="AdvancedSetup" component={AdvancedSetupScreen} />
         <RootStack.Screen name="Main" component={MainTabs} />

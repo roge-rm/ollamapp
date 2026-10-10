@@ -206,7 +206,7 @@ describe('SettingsScreen', () => {
     expect(mockSetOnboardingComplete).toHaveBeenCalledWith(false);
     expect(CommonActions.reset).toHaveBeenCalledWith({
       index: 0,
-      routes: [{ name: 'Onboarding' }],
+      routes: [{ name: 'AutoSetup' }],
     });
     expect(mockDispatch).toHaveBeenCalled();
   });

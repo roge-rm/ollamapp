@@ -118,47 +118,6 @@ If asked about yourself, you can mention you're a local AI assistant that priori
   maxContextLength: 4096, // Default context window; eliminates double-init on models that support ≥4096
 };
 
-export interface OnboardingSlide {
-  id: string;
-  keyword: string;
-  title: string;
-  description: string;
-}
-
-// Core onboarding slides. Optional feature packages contribute additional slide data through the
-// onboarding.additionalSlides hook so Core keeps one renderer without advertising unavailable
-// features in free builds.
-export const ONBOARDING_SLIDES: readonly OnboardingSlide[] = [
-  {
-    id: 'freedom',
-    keyword: 'YOURS',
-    title: 'Your AI.\nNo Strings Attached.',
-    description:
-      'No subscriptions, no sign-ups, no company reading your chats. An AI that lives on your device and answers to no one else.',
-  },
-  {
-    id: 'magic',
-    keyword: 'MAGIC',
-    title: 'Just Talk.\nIt Figures Out the Rest.',
-    description:
-      'Describe an image \u2014 it creates one. Show it a photo \u2014 it understands. Attach a document \u2014 it reads it. One conversation, no modes, no friction.',
-  },
-  {
-    id: 'create',
-    keyword: 'CREATE',
-    title: 'Say It Simply.\nGet Something Stunning.',
-    description:
-      'Type \u201Cimagine a cat on the moon\u201D and watch your words become a vivid image in seconds. AI enhances your ideas automatically \u2014 no prompt engineering needed.',
-  },
-  {
-    id: 'hardware',
-    keyword: 'READY',
-    title: 'Powered\nYour Way.',
-    description:
-      'Run models on your phone with Metal and Neural Engine acceleration \u2014 or connect to powerful models already on your home network. We\u2019ll find the best setup for you.',
-  },
-];
-
 // Fonts
 export const FONTS = {
   mono: 'Menlo',
