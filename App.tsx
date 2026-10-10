@@ -24,6 +24,7 @@ import { initActiveDownloadPersistence } from './src/services/activeDownloadPers
 import { restoreQueuedDownloads } from './src/services/restoreQueuedDownloads';
 import { startLoadPolicySync } from './src/services/loadPolicySync';
 import { startNetworkReconnectWatcher, stopNetworkReconnectWatcher } from './src/services/networkReconnect';
+import { startGenerationKeepAlive, stopGenerationKeepAlive } from './src/services/generationKeepAlive';
 import { registerCoreDownloadProviders } from './src/services/modelDownloadService/registerProviders';
 import { useDownloadListeners } from './src/hooks/useDownloads';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -285,6 +286,7 @@ function App() {
           // must still start the watcher so a later network recovery can repair the connection.
           startNetworkReconnectWatcher();
         });
+      startGenerationKeepAlive();
 
       // Check if passphrase is set and lock app if needed
       logger.log('[BOOT] auth passphrase check');
@@ -333,6 +335,7 @@ function App() {
     return () => {
       startupGeneration.current += 1;
       stopNetworkReconnectWatcher();
+      stopGenerationKeepAlive();
     };
   }, [initializeApp]);
 
