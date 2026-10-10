@@ -1,6 +1,7 @@
 /**
  * Semantic tool routing via the on-device embedding model (the same ~25MB
- * all-MiniLM-L6-v2 we already ship for RAG — see services/rag/embedding.ts).
+ * all-MiniLM-L6-v2 used for RAG — see services/rag/embedding.ts). Only used once that
+ * model has been downloaded for project documents.
  *
  * Why: with several MCP servers connected, dozens of large tool schemas would
  * otherwise all land in the prompt, and the model must prefill every one before it
@@ -168,6 +169,10 @@ export async function selectToolsByEmbedding(
 ): Promise<string[]> {
   if (tools.length <= topK || !query.trim()) {
     return tools.map(t => t.function.name);
+  }
+  // Routing is only an optimization, so never start the model download for it. The caller keeps all tools.
+  if (!embeddingService.isLoaded() && !(await embeddingService.isDownloaded())) {
+    throw new Error('Embedding model not downloaded');
   }
   await hydrateCache();
   await embeddingService.load();

@@ -49,6 +49,8 @@ function mockFetchResponses(...responses: { ok: boolean; body?: unknown }[]) {
 describe('huggingFaceModelBrowser', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Drop any queued responses a test didn't use, so they can't leak into the next one.
+    mockFetch.mockReset();
   });
 
   // -----------------------------------------------------------------------
@@ -76,50 +78,6 @@ describe('huggingFaceModelBrowser', () => {
           'https://huggingface.co/xororz/sd-mnn/resolve/main/AnythingV5.zip',
       });
       expect(models[0].variant).toBeUndefined();
-    });
-
-    it('parses QNN backend zip as an NPU model with variant', async () => {
-      mockFetchResponses(
-        { ok: true, body: [] },
-        {
-          ok: true,
-          body: [
-            treeEntry('AnythingV5_qnn2.28_8gen2.zip', 100, 'file', 3000),
-          ],
-        },
-      );
-
-      const models = await fetchAvailableModels(true);
-
-      expect(models).toHaveLength(1);
-      expect(models[0]).toMatchObject({
-        id: 'anythingv5_npu_8gen2',
-        name: 'AnythingV5',
-        displayName: 'Anything V5 (NPU 8gen2)',
-        backend: 'qnn',
-        variant: '8gen2',
-        fileName: 'AnythingV5_qnn2.28_8gen2.zip',
-        size: 3000,
-        repo: 'xororz/sd-qnn',
-      });
-    });
-
-    it('parses QNN backend with "min" variant as non-flagship', async () => {
-      mockFetchResponses(
-        { ok: true, body: [] },
-        {
-          ok: true,
-          body: [treeEntry('ChilloutMix_qnn2.28_min.zip', 100, 'file', 1500)],
-        },
-      );
-
-      const models = await fetchAvailableModels(true);
-
-      expect(models).toHaveLength(1);
-      expect(models[0]).toMatchObject({
-        displayName: 'Chillout Mix (NPU non-flagship)',
-        variant: 'min',
-      });
     });
 
     it('filters out non-zip files', async () => {
@@ -157,25 +115,6 @@ describe('huggingFaceModelBrowser', () => {
       expect(models).toHaveLength(1);
     });
 
-    it('filters out QNN zips that do not match the expected pattern', async () => {
-      mockFetchResponses(
-        { ok: true, body: [] },
-        {
-          ok: true,
-          body: [
-            // Missing the _qnn<version>_<variant> pattern
-            treeEntry('RandomFile.zip', 100),
-            treeEntry('AnythingV5_qnn2.28_8gen2.zip', 100, 'file', 3000),
-          ],
-        },
-      );
-
-      const models = await fetchAvailableModels(true);
-
-      expect(models).toHaveLength(1);
-      expect(models[0].backend).toBe('qnn');
-    });
-
     it('uses entry.size when lfs is absent', async () => {
       mockFetchResponses(
         { ok: true, body: [treeEntry('TinyModel.zip', 999)] },
@@ -192,37 +131,6 @@ describe('huggingFaceModelBrowser', () => {
   // fetchAvailableModels
   // -----------------------------------------------------------------------
   describe('fetchAvailableModels', () => {
-    it('returns parsed models from both repos', async () => {
-      mockFetchResponses(
-        { ok: true, body: [treeEntry('ModelA.zip', 10, 'file', 1000)] },
-        {
-          ok: true,
-          body: [treeEntry('ModelB_qnn2.28_8gen1.zip', 10, 'file', 2000)],
-        },
-      );
-
-      const models = await fetchAvailableModels(true);
-
-      expect(models).toHaveLength(2);
-      expect(models[0].backend).toBe('mnn');
-      expect(models[1].backend).toBe('qnn');
-    });
-
-    it('sorts GPU (mnn) before NPU (qnn)', async () => {
-      mockFetchResponses(
-        { ok: true, body: [treeEntry('Zebra.zip', 10, 'file', 1000)] },
-        {
-          ok: true,
-          body: [treeEntry('Alpha_qnn2.28_8gen2.zip', 10, 'file', 2000)],
-        },
-      );
-
-      const models = await fetchAvailableModels(true);
-
-      expect(models[0].backend).toBe('mnn');
-      expect(models[1].backend).toBe('qnn');
-    });
-
     it('sorts alphabetically within the same backend', async () => {
       mockFetchResponses(
         {
@@ -244,14 +152,13 @@ describe('huggingFaceModelBrowser', () => {
     it('uses cache on second call (no second fetch)', async () => {
       mockFetchResponses(
         { ok: true, body: [treeEntry('CachedModel.zip', 10, 'file', 500)] },
-        { ok: true, body: [] },
       );
 
       const first = await fetchAvailableModels(true);
       const second = await fetchAvailableModels(false);
 
-      // fetch should only have been called twice (once per repo, during the first call)
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // One fetch, during the first call
+      expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(second).toEqual(first);
     });
 
@@ -259,45 +166,31 @@ describe('huggingFaceModelBrowser', () => {
       // First call
       mockFetchResponses(
         { ok: true, body: [treeEntry('OldModel.zip', 10, 'file', 500)] },
-        { ok: true, body: [] },
       );
       await fetchAvailableModels(true);
 
       // Second call with forceRefresh
       mockFetchResponses(
         { ok: true, body: [treeEntry('NewModel.zip', 10, 'file', 600)] },
-        { ok: true, body: [] },
       );
       const models = await fetchAvailableModels(true);
 
-      expect(mockFetch).toHaveBeenCalledTimes(4); // 2 per call
+      expect(mockFetch).toHaveBeenCalledTimes(2); // 1 per call
       expect(models).toHaveLength(1);
       expect(models[0].name).toBe('NewModel');
     });
 
-    it('skips QNN repo when skipQnn is true', async () => {
+    it('never fetches the NPU (qnn) repo', async () => {
       mockFetchResponses(
         { ok: true, body: [treeEntry('ModelA.zip', 10, 'file', 1000)] },
-        // Second fetch should not happen
       );
 
-      const models = await fetchAvailableModels(true, { skipQnn: true });
+      const models = await fetchAvailableModels(true);
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0][0]).toContain('xororz/sd-mnn');
       expect(models).toHaveLength(1);
       expect(models[0].backend).toBe('mnn');
-    });
-
-    it('fetches QNN repo when skipQnn is false', async () => {
-      mockFetchResponses(
-        { ok: true, body: [treeEntry('ModelA.zip', 10, 'file', 1000)] },
-        { ok: true, body: [treeEntry('ModelB_qnn2.28_8gen1.zip', 10, 'file', 2000)] },
-      );
-
-      const models = await fetchAvailableModels(true, { skipQnn: false });
-
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(models).toHaveLength(2);
     });
 
     it('throws when fetch returns a non-ok response', async () => {

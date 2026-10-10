@@ -8,8 +8,10 @@ jest.mock('../../../../src/utils/logger', () => ({
 
 const mockInitLlama = initLlama as jest.MockedFunction<typeof initLlama>;
 const mockExists = RNFS.exists as jest.MockedFunction<typeof RNFS.exists>;
-const mockCopyFileAssets = (RNFS as any).copyFileAssets as jest.MockedFunction<any>;
-const mockCopyFile = RNFS.copyFile as jest.MockedFunction<typeof RNFS.copyFile>;
+const mockDownloadFile = RNFS.downloadFile as jest.MockedFunction<any>;
+const mockHash = (RNFS as any).hash as jest.MockedFunction<any>;
+const mockMoveFile = RNFS.moveFile as jest.MockedFunction<typeof RNFS.moveFile>;
+const MODEL_SHA256 = '263215c3cadd6e16740741a7624ab4cbb6c8e777688bd5331ecfbf5681c2f8ed';
 
 // Must import after mocks are set up
 import { embeddingService } from '../../../../src/services/rag/embedding';
@@ -32,7 +34,10 @@ describe('EmbeddingService', () => {
       embedding: mockEmbedding,
       release: mockRelease,
     } as any);
-    mockExists.mockResolvedValue(false);
+    // The model is on the device unless a test says otherwise.
+    mockExists.mockResolvedValue(true);
+    mockDownloadFile.mockImplementation(() => ({ jobId: 1, promise: Promise.resolve({ statusCode: 200 }) }));
+    mockHash.mockResolvedValue(MODEL_SHA256);
   });
 
   describe('load', () => {
@@ -47,20 +52,35 @@ describe('EmbeddingService', () => {
       expect(embeddingService.isLoaded()).toBe(true);
     });
 
-    it('copies model from assets if not already present', async () => {
+    it('downloads the model when it is not on the device', async () => {
       mockExists.mockResolvedValue(false);
       await embeddingService.load();
 
-      // Should have checked existence and copied
-      expect(mockExists).toHaveBeenCalled();
+      expect(mockDownloadFile).toHaveBeenCalledWith(expect.objectContaining({
+        fromUrl: expect.stringContaining('all-MiniLM-L6-v2-Q8_0.gguf'),
+        toFile: expect.stringMatching(/\.part$/),
+      }));
+      expect(mockMoveFile).toHaveBeenCalledWith(
+        expect.stringMatching(/\.part$/),
+        expect.stringMatching(/all-MiniLM-L6-v2-Q8_0\.gguf$/),
+      );
+      expect(embeddingService.isLoaded()).toBe(true);
     });
 
-    it('skips copy if model already exists', async () => {
-      mockExists.mockResolvedValue(true);
+    it('skips the download if the model is already there', async () => {
       await embeddingService.load();
 
-      expect(mockCopyFileAssets).not.toHaveBeenCalled();
-      expect(mockCopyFile).not.toHaveBeenCalled();
+      expect(mockDownloadFile).not.toHaveBeenCalled();
+    });
+
+    it('rejects a download whose checksum does not match and keeps nothing', async () => {
+      mockExists.mockResolvedValue(false);
+      mockHash.mockResolvedValue('not-the-model');
+
+      await expect(embeddingService.load()).rejects.toThrow(/document search model.*checksum mismatch/);
+      expect(mockMoveFile).not.toHaveBeenCalled();
+      expect(RNFS.unlink).toHaveBeenCalledWith(expect.stringMatching(/\.part$/));
+      expect(embeddingService.isLoaded()).toBe(false);
     });
 
     it('is idempotent — second call is a no-op', async () => {
@@ -150,20 +170,6 @@ describe('EmbeddingService', () => {
   describe('getDimension', () => {
     it('returns 384', () => {
       expect(embeddingService.getDimension()).toBe(384);
-    });
-  });
-
-  describe('load — Android copyFileAssets branch', () => {
-    it('copies from assets on Android when file does not exist', async () => {
-      const { Platform } = require('react-native');
-      Platform.OS = 'android';
-      mockExists.mockResolvedValue(false);
-      mockCopyFileAssets.mockResolvedValue(undefined);
-
-      await embeddingService.load();
-
-      expect(mockCopyFileAssets).toHaveBeenCalled();
-      Platform.OS = 'ios'; // restore
     });
   });
 

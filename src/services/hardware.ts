@@ -385,18 +385,6 @@ class HardwareService {
       return { recommendedBackend: coreml, recommendedModels: ['low ram'], bannerText: 'Low RAM models recommended for your device', compatibleBackends: [coreml] };
     return { recommendedBackend: coreml, recommendedModels: ['v1-5-palettized', '2-1-base-palettized'], bannerText: 'SD 1.5 or SD 2.1 Palettized recommended for your device', compatibleBackends: [coreml] };
   }
-  private getQualcommImageRec(socInfo: SoCInfo): ImageModelRecommendation {
-    let label: string;
-    if (socInfo.qnnVariant === '8gen2') label = 'flagship';
-    else if (socInfo.qnnVariant === '8gen1') label = '';
-    else label = 'lightweight ';
-
-    let suffix: string;
-    if (socInfo.qnnVariant === '8gen2') suffix = 'NPU models for fastest inference';
-    else if (socInfo.qnnVariant === '8gen1') suffix = 'NPU models supported';
-    else suffix = 'lightweight NPU models recommended';
-    return { recommendedBackend: 'qnn', qnnVariant: socInfo.qnnVariant, bannerText: `Snapdragon ${label}\u2014 ${suffix}`, compatibleBackends: ['qnn', 'mnn'] };
-  }
   async getImageModelRecommendation(): Promise<ImageModelRecommendation> {
     if (this.cachedImageRecommendation) return this.cachedImageRecommendation;
     const socInfo = await this.getSoCInfo();
@@ -404,20 +392,11 @@ class HardwareService {
     let rec: ImageModelRecommendation;
     if (Platform.OS === 'ios') {
       rec = this.getIosImageRec(socInfo.appleChip, ramGB);
-    } else if (socInfo.vendor === 'qualcomm' && socInfo.hasNPU) {
-      rec = this.getQualcommImageRec(socInfo);
-    } else if (socInfo.vendor === 'qualcomm') {
-      rec = {
-        recommendedBackend: 'mnn',
-        bannerText:
-          'GPU models recommended \u2014 your Snapdragon doesn\u2019t support NPU acceleration',
-        compatibleBackends: ['mnn'],
-      };
     } else {
+      // This build ships no Snapdragon NPU libraries, so Android always uses the GPU models.
       rec = {
         recommendedBackend: 'mnn',
-        bannerText:
-          'GPU models recommended \u2014 NPU requires Snapdragon 888+',
+        bannerText: 'GPU models recommended',
         compatibleBackends: ['mnn'],
       };
     }

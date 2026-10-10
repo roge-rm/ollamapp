@@ -968,7 +968,7 @@ describe('HardwareService', () => {
     });
 
     describe('Android Qualcomm recommendations', () => {
-      it('recommends QNN for Qualcomm devices with known SoC', async () => {
+      it('recommends GPU models for Qualcomm devices with a known SoC', async () => {
         Platform.OS = 'android' as typeof Platform.OS;
         NativeModules.LocalDreamModule = {
           getSoCModel: jest.fn().mockResolvedValue('SM8550-AB'),
@@ -986,11 +986,10 @@ describe('HardwareService', () => {
         mockedDeviceInfo.getHardware.mockResolvedValue('qcom');
         await hardwareService.getDeviceInfo();
         const rec = await hardwareService.getImageModelRecommendation();
-        expect(rec.recommendedBackend).toBe('qnn');
-        expect(rec.qnnVariant).toBe('8gen2');
-        expect(rec.compatibleBackends).toEqual(
-          expect.arrayContaining(['qnn', 'mnn']),
-        );
+        // No NPU libraries ship in this build, so even an NPU-capable Snapdragon gets GPU models.
+        expect(rec.recommendedBackend).toBe('mnn');
+        expect(rec.qnnVariant).toBeUndefined();
+        expect(rec.compatibleBackends).toEqual(['mnn']);
       });
 
       it('recommends MNN for Qualcomm without native module (cannot determine SoC)', async () => {
@@ -1002,7 +1001,7 @@ describe('HardwareService', () => {
         });
         const rec = await hardwareService.getImageModelRecommendation();
         expect(rec.recommendedBackend).toBe('mnn');
-        expect(rec.bannerText).toContain('Snapdragon');
+        expect(rec.bannerText).toContain('GPU');
       });
     });
 
@@ -1017,7 +1016,6 @@ describe('HardwareService', () => {
         const rec = await hardwareService.getImageModelRecommendation();
         expect(rec.recommendedBackend).toBe('mnn');
         expect(rec.bannerText).toContain('GPU');
-        expect(rec.bannerText).toContain('888');
         expect(rec.compatibleBackends).toEqual(['mnn']);
       });
 
@@ -1115,20 +1113,18 @@ describe('HardwareService', () => {
         await hardwareService.getDeviceInfo();
       };
 
-      it('returns qnn recommendation for 8gen1 Qualcomm device', async () => {
+      it('returns GPU models for an 8gen1 Qualcomm device', async () => {
         await setupQualcommDevice('SM8450-AB'); // 8gen1
         const rec = await hardwareService.getImageModelRecommendation();
-        expect(rec.recommendedBackend).toBe('qnn');
-        expect(rec.qnnVariant).toBe('8gen1');
-        expect(rec.bannerText).toContain('NPU');
+        expect(rec.recommendedBackend).toBe('mnn');
+        expect(rec.compatibleBackends).toEqual(['mnn']);
       });
 
-      it('returns qnn recommendation for min (Snapdragon 888) Qualcomm device', async () => {
+      it('returns GPU models for a Snapdragon 888 device', async () => {
         await setupQualcommDevice('SM8350-AC'); // min
         const rec = await hardwareService.getImageModelRecommendation();
-        expect(rec.recommendedBackend).toBe('qnn');
-        expect(rec.qnnVariant).toBe('min');
-        expect(rec.bannerText).toContain('lightweight');
+        expect(rec.recommendedBackend).toBe('mnn');
+        expect(rec.compatibleBackends).toEqual(['mnn']);
       });
     });
   });

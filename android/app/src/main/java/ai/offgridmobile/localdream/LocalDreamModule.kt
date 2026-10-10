@@ -51,15 +51,8 @@ class LocalDreamModule(reactContext: ReactApplicationContext) :
         private const val EVENT_PROGRESS = "LocalDreamProgress"
         private const val EVENT_ERROR = "LocalDreamError"
 
-        // Mirrors local-dream's getChipsetSuffix: any SM-prefixed chip → supported
-        internal fun isNpuSupportedInternal(): Boolean {
-            val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Build.SOC_MODEL
-            } else {
-                return false
-            }
-            return soc.startsWith("SM")
-        }
+        // The Snapdragon NPU libraries aren't shipped in this build, so the NPU is never used.
+        internal fun isNpuSupportedInternal(): Boolean = false
 
         internal fun resolveModelDir(dir: File, isCpu: Boolean): File? {
             val markerFile = if (isCpu) "unet.mnn" else "unet.bin"

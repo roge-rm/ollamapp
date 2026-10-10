@@ -1,10 +1,13 @@
 import { initLlama, LlamaContext } from 'llama.rn';
-import { Platform } from 'react-native';
 import RNFS from 'react-native-fs';
 import logger from '../../utils/logger';
 import { modelResidencyManager } from '../modelResidency';
 
 const EMBEDDING_MODEL_FILENAME = 'all-MiniLM-L6-v2-Q8_0.gguf';
+// Fetched the first time a project's documents need it, not bundled in the app (about 24 MB).
+const EMBEDDING_MODEL_URL =
+  'https://huggingface.co/second-state/All-MiniLM-L6-v2-Embedding-GGUF/resolve/main/all-MiniLM-L6-v2-Q8_0.gguf';
+const EMBEDDING_MODEL_SHA256 = '263215c3cadd6e16740741a7624ab4cbb6c8e777688bd5331ecfbf5681c2f8ed';
 const EMBEDDING_DIMENSION = 384;
 const EMBEDDING_CTX_SIZE = 512;
 /** Residency key for the embedding model so it's accounted for in the RAM budget. */
@@ -51,7 +54,7 @@ class EmbeddingService {
   }
 
   private async doLoad(): Promise<void> {
-    const modelPath = await this.ensureModelCopied();
+    const modelPath = await this.ensureModelDownloaded();
     logger.log('[Embedding] Loading embedding model...');
     // Load through the residency manager's global lock so this small RAG model
     // never initializes alongside another model load (the single load gateway).
@@ -91,18 +94,36 @@ class EmbeddingService {
     logger.log('[Embedding] Model loaded successfully');
   }
 
-  private async ensureModelCopied(): Promise<string> {
-    const destPath = `${RNFS.DocumentDirectoryPath}/${EMBEDDING_MODEL_FILENAME}`;
-    const exists = await RNFS.exists(destPath);
-    if (!exists) {
-      if (Platform.OS === 'android') {
-        await RNFS.copyFileAssets(`models/${EMBEDDING_MODEL_FILENAME}`, destPath);
-      } else {
-        const bundlePath = `${RNFS.MainBundlePath}/${EMBEDDING_MODEL_FILENAME}`;
-        await RNFS.copyFile(bundlePath, destPath);
-      }
-      logger.log('[Embedding] Copied embedding model to documents directory');
+  private modelPath(): string {
+    return `${RNFS.DocumentDirectoryPath}/${EMBEDDING_MODEL_FILENAME}`;
+  }
+
+  /** Whether the model file is on the device, so callers can skip work that would download it. */
+  async isDownloaded(): Promise<boolean> {
+    return RNFS.exists(this.modelPath());
+  }
+
+  private async ensureModelDownloaded(): Promise<string> {
+    const destPath = this.modelPath();
+    if (await RNFS.exists(destPath)) return destPath;
+
+    // Download beside the final path and only move it into place once the checksum matches,
+    // so a dropped connection never leaves a half file that looks downloaded.
+    const partPath = `${destPath}.part`;
+    await RNFS.unlink(partPath).catch(() => {});
+    logger.log('[Embedding] Downloading embedding model...');
+    try {
+      const { statusCode } = await RNFS.downloadFile({ fromUrl: EMBEDDING_MODEL_URL, toFile: partPath }).promise;
+      if (statusCode !== 200) throw new Error(`HTTP ${statusCode}`);
+      const sha = await RNFS.hash(partPath, 'sha256');
+      if (sha !== EMBEDDING_MODEL_SHA256) throw new Error('checksum mismatch');
+      await RNFS.moveFile(partPath, destPath);
+    } catch (error) {
+      await RNFS.unlink(partPath).catch(() => {});
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(`Couldn't download the document search model (${reason}). Check your connection and try again.`);
     }
+    logger.log('[Embedding] Embedding model downloaded');
     return destPath;
   }
 

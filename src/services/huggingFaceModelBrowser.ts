@@ -77,16 +77,13 @@ async function fetchRepoFiles(repo: string): Promise<HFTreeEntry[]> {
   return response.json();
 }
 
-export async function fetchAvailableModels(forceRefresh = false, opts?: { skipQnn?: boolean }): Promise<HFImageModel[]> {
+export async function fetchAvailableModels(forceRefresh = false, _opts?: { skipQnn?: boolean }): Promise<HFImageModel[]> {
   if (!forceRefresh && cachedModels && Date.now() - cacheTimestamp < CACHE_TTL) {
     return cachedModels;
   }
 
-  const fetchQnn = !opts?.skipQnn;
-  const [mnnFiles, qnnFiles] = await Promise.all([
-    fetchRepoFiles(REPOS.mnn),
-    fetchQnn ? fetchRepoFiles(REPOS.qnn) : Promise.resolve([] as HFTreeEntry[]),
-  ]);
+  // NPU (qnn) models need the Snapdragon libraries this build leaves out, so only GPU models are listed.
+  const mnnFiles = await fetchRepoFiles(REPOS.mnn);
 
   const models: HFImageModel[] = [];
 
@@ -99,18 +96,6 @@ export async function fetchAvailableModels(forceRefresh = false, opts?: { skipQn
       downloadUrl: `https://huggingface.co/${REPOS.mnn}/resolve/main/${entry.path}`,
       size: entry.lfs?.size ?? entry.size,
       repo: REPOS.mnn,
-    });
-  }
-
-  for (const entry of qnnFiles) {
-    if (entry.type !== 'file') continue;
-    const parsed = parseFileName(entry.path, 'qnn');
-    if (!parsed) continue;
-    models.push({
-      ...parsed,
-      downloadUrl: `https://huggingface.co/${REPOS.qnn}/resolve/main/${entry.path}`,
-      size: entry.lfs?.size ?? entry.size,
-      repo: REPOS.qnn,
     });
   }
 

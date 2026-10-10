@@ -7,10 +7,13 @@ jest.mock('../../../src/utils/logger', () => ({
 
 const mockEmbed = jest.fn();
 const mockLoad = jest.fn();
+let mockDownloaded = true;
 jest.mock('../../../src/services/rag/embedding', () => ({
   embeddingService: {
     load: (...a: unknown[]) => mockLoad(...a),
     embed: (...a: unknown[]) => mockEmbed(...a),
+    isLoaded: () => false,
+    isDownloaded: async () => mockDownloaded,
   },
 }));
 
@@ -30,6 +33,14 @@ describe('toolEmbeddingRouter (F6 — persistent embedding cache)', () => {
     let n = 0;
     mockEmbed.mockImplementation(async () => { n += 1; return [n, 1, 0]; });
     mockLoad.mockResolvedValue(undefined);
+    mockDownloaded = true;
+  });
+
+  it('never starts the model download just to route tools', async () => {
+    mockDownloaded = false;
+    await expect(selectToolsByEmbedding('find my page', TOOLS, 4)).rejects.toThrow('not downloaded');
+    expect(mockLoad).not.toHaveBeenCalled();
+    expect(mockEmbed).not.toHaveBeenCalled();
   });
 
   it('embeds each tool once and the query once on a cold cache', async () => {

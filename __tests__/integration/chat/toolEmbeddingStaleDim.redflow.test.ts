@@ -23,6 +23,7 @@ describe('PR#453 — stale-dimension tool-embedding cache (red-flow)', () => {
   it('re-embeds a cached tool vector when the embedding model dimension changes', async () => {
     _resetToolEmbeddingCache();
     jest.spyOn(embeddingService, 'load').mockResolvedValue(undefined as never);
+    jest.spyOn(embeddingService, 'isDownloaded').mockResolvedValue(true);
     let dim = 3;
     const embed = jest.spyOn(embeddingService, 'embed').mockImplementation(async (_text: string) => new Array(dim).fill(0.1));
 
