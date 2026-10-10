@@ -1,4 +1,4 @@
-import { PROMPT_ENHANCEMENT_STATUS } from '@offgrid/sync';
+import { PROMPT_ENHANCEMENT_STATUS } from '@offgrid/chat';
 import { useAppStore, useChatStore } from '../stores';
 import logger from '../utils/logger';
 import { activeModelService } from './activeModelService';

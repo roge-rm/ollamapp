@@ -11,7 +11,7 @@ describe('remote media model pickers', () => {
   function addGateway(): string {
     return useRemoteServerStore.getState().addServer({
       name: 'Studio Mac',
-      endpoint: 'http://192.168.1.50:7878', // NOSONAR - private LAN test fixture
+      endpoint: 'http://192.168.1.50:11434', // NOSONAR - private LAN test fixture
       providerType: 'openai-compatible',
       mediaModels: {
         transcription: '/models/whisper-base.bin',

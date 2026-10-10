@@ -1,15 +1,9 @@
 /**
- * AboutScreen — Follow / Community links.
- *
- * The About screen carries the same Follow-on-X + Join-Slack affordances as Settings (the user asked for
- * them in BOTH places). These guards prove the links render and each hands the OS the correct shared URL
- * constant when tapped. Falsify: wire either link to the wrong URL -> the openURL assertion fails.
+ * AboutScreen: shows the app name, credits the app it's built from, and has no social links.
  */
 import React from 'react';
 import { Linking } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
-// Same shared constants the screen uses — assert against the single source of truth, not re-hardcoded strings.
-import { FOLLOW_X_URL } from '../../../src/utils/sharePrompt';
 
 // Navigation is globally mocked in jest.setup.ts.
 jest.mock('../../../src/hooks/useFocusTrigger', () => ({ useFocusTrigger: () => 0 }));
@@ -23,29 +17,24 @@ jest.mock('../../../src/components/AnimatedListItem', () => ({
 
 import { AboutScreen } from '../../../src/screens/AboutScreen';
 
-describe('AboutScreen — Follow / Community', () => {
+describe('AboutScreen', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  it('renders the Follow-on-X and Join-Slack items', () => {
-    const { getByText, getByTestId } = render(<AboutScreen />);
-    expect(getByText('Follow @alichherawalla on X')).toBeTruthy();
-    expect(getByTestId('about-follow-on-x')).toBeTruthy();
-    expect(getByTestId('about-join-slack')).toBeTruthy();
+  it('shows the app name', () => {
+    const { getByText } = render(<AboutScreen />);
+    expect(getByText('Ollamapp')).toBeTruthy();
   });
 
-  it('opens the X profile URL when Follow-on-X is tapped', () => {
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
-    const { getByTestId } = render(<AboutScreen />);
-    fireEvent.press(getByTestId('about-follow-on-x'));
-    expect(openURL).toHaveBeenCalledWith(FOLLOW_X_URL);
+  it('opens the original project when the credit row is tapped', () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const { getByText } = render(<AboutScreen />);
+    fireEvent.press(getByText('Based on Off Grid AI'));
+    expect(openURL).toHaveBeenCalledWith('https://github.com/off-grid-ai/OGAM');
   });
 
-  it('opens the Slack invite URL when Join-Slack is tapped', () => {
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
-    const { getByTestId } = render(<AboutScreen />);
-    fireEvent.press(getByTestId('about-join-slack'));
-    expect(openURL).toHaveBeenCalledWith(
-      'https://join.slack.com/t/off-grid-mobile/shared_invite/zt-3swt3s84k-R0CHRwISaUpExV2~3qUUdQ',
-    );
+  it('has no X or Slack rows', () => {
+    const { queryByTestId } = render(<AboutScreen />);
+    expect(queryByTestId('about-follow-on-x')).toBeNull();
+    expect(queryByTestId('about-join-slack')).toBeNull();
   });
 });

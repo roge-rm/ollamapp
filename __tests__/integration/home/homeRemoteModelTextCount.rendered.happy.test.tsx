@@ -68,8 +68,8 @@ describe('T097 (rendered) — Home Text count with a remote model active is not 
   const connectServerViaUI = async (env: ReturnType<typeof setup>) => {
     const { React, rtl, RemoteServerEditorScreen } = env;
     const srv = rtl.render(React.createElement(RemoteServerEditorScreen));
-    rtl.fireEvent.changeText(await rtl.waitFor(() => srv.getByPlaceholderText('Off Grid AI Desktop')), 'My LM Studio');
-    rtl.fireEvent.changeText(srv.getByPlaceholderText('http://192.168.1.50:7878'), 'http://localhost:1234');
+    rtl.fireEvent.changeText(await rtl.waitFor(() => srv.getByPlaceholderText('Ollama')), 'My LM Studio');
+    rtl.fireEvent.changeText(srv.getByPlaceholderText('http://192.168.1.50:11434'), 'http://localhost:1234');
     rtl.fireEvent.press(srv.getByTestId('test-connection'));
     await rtl.waitFor(() => { expect(srv.queryByText(/Connected \(/)).not.toBeNull(); }, { timeout: 4000 });
     rtl.fireEvent.press(srv.getByTestId('save-server'));

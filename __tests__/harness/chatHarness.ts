@@ -47,9 +47,6 @@ export interface ChatHarnessOptions {
   /** Install the stateful background-download native fake (drive DownloadProgress/Complete/Error
    *  events through the real backgroundDownloadService — e.g. an in-flight STT model download). */
   download?: boolean;
-  /** Activate the PRO feature set (audio/voice mode header toggle, audio layout, TTS, MCP) via the real
-   *  bootstrap, so pro user-flows are reachable in the mounted screen. */
-  pro?: boolean;
   /** Skip the deterministic pre-load after model select, so the model is selected-but-not-loaded exactly
    *  as the real lazy flow leaves it (load defers to the first send). Use to assert the lazy-on-select
    *  invariant (no eager warm) via the In Memory section. Default false (pre-load for send determinism). */
@@ -153,12 +150,6 @@ export async function setupChatScreen(opts: ChatHarnessOptions) {
 
   useAppStore.setState({ checklistDismissed: true });
 
-  // Activate PRO (audio/voice mode header toggle, audio layout, TTS, MCP) via the real bootstrap BEFORE any
-  // screen mounts, so pro slots render in Home + ChatScreen. Reusable seam (proHarness.installPro).
-  if (opts.pro) {
-    const { installPro } = require('./proHarness');
-    await installPro();
-  }
 
   // GESTURE: mount the real Home screen — its REAL hydration loads the record — then open the picker and TAP
   // the model row. The real handleSelectTextModel sets it active (no setState activeModelId shortcut).
@@ -734,19 +725,10 @@ export async function setupChatScreen(opts: ChatHarnessOptions) {
       return this.view;
     },
 
-    /** The mounted tree: ChatScreen, plus the app.root slot when pro is active. Fresh elements each call. */
+    /** The mounted tree: a fresh ChatScreen element each call. */
     screenTree(): React.ReactElement {
       const { ChatScreen } = require('../../src/screens/ChatScreen');
-      const { getSlot, SLOTS } = require('../../src/bootstrap/slotRegistry');
-      const AppRoot = opts.pro ? getSlot(SLOTS.appRoot) : undefined;
-      return AppRoot
-        ? React.createElement(
-            React.Fragment,
-            null,
-            React.createElement(AppRoot, {}),
-            React.createElement(ChatScreen, {}),
-          )
-        : React.createElement(ChatScreen, {});
+      return React.createElement(ChatScreen, {});
     },
 
     /**

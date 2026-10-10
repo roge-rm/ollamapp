@@ -64,7 +64,7 @@ describe('remote model refresh failure', () => {
 
   it('unsets only the unreachable server models after Refresh Models', async () => {
     const view = render(<ModelsSheet />);
-    expect(view.getAllByTestId(/models-row-.*-remote/)).toHaveLength(4);
+    expect(view.getAllByTestId(/models-row-.*-remote/)).toHaveLength(3);
 
     fireEvent.press(view.getByTestId('models-refresh-remote'));
 
@@ -74,7 +74,6 @@ describe('remote model refresh failure', () => {
     });
     expect(view.getByText('Local text')).toBeTruthy();
     expect(view.getByText('Local image')).toBeTruthy();
-    expect(view.getByText('Local voice')).toBeTruthy();
     expect(view.getByText('Local speech')).toBeTruthy();
   });
 });

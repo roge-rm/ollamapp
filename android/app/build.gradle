@@ -90,7 +90,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "ai.offgridmobile"
+        applicationId "com.rm.ollamapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1791224063

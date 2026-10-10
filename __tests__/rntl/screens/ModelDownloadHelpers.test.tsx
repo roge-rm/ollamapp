@@ -143,7 +143,7 @@ describe('NetworkSection', () => {
   it('shows empty text when no servers and not checking', () => {
     const { getByText } = render(<NetworkSection {...defaultNetworkProps} />);
     expect(
-      getByText('No Off Grid AI Desktop, Ollama, or LM Studio server found. Scan again or add one.'),
+      getByText('No Ollama or LM Studio server found. Scan again or add one.'),
     ).toBeTruthy();
   });
 

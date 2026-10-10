@@ -48,14 +48,9 @@
          the app is backgrounded / the screen is off (WorkManager foreground worker). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <!-- Personal Mesh keeps a live local-network connection to paired devices. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <!-- Android 13+ needs this to SHOW the ongoing download notification (requested at runtime). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- For reading and creating calendar events -->
-    <uses-permission android:name="android.permission.READ_CALENDAR" />
-    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
     <application
       android:name=".MainApplication"
@@ -97,23 +92,6 @@
         </intent-filter>
       </activity>
 
-      <!-- Android does not let normal background apps read the system clipboard. This explicit
-           selection-menu action receives only the text the user chose and stores it until the
-           existing clipboard sync owner can import it. -->
-      <activity
-          android:name="ai.offgridmobile.clipboard.ProcessTextActivity"
-          android:label="@string/process_text_action_label"
-          android:exported="true"
-          android:excludeFromRecents="true"
-          android:noHistory="true"
-          android:theme="@android:style/Theme.Translucent.NoTitleBar">
-        <intent-filter>
-          <action android:name="android.intent.action.PROCESS_TEXT" />
-          <category android:name="android.intent.category.DEFAULT" />
-          <data android:mimeType="text/plain" />
-        </intent-filter>
-      </activity>
-
 <!-- Receiver for background download completion events -->
       <receiver
           android:name=".download.DownloadCompleteBroadcastReceiver"
@@ -130,15 +108,6 @@
           android:foregroundServiceType="dataSync"
           tools:node="merge" />
 
-      <!-- Personal Mesh residency: holds mDNS discovery, the TCP listener and in-flight
-           transfers open while Off Grid is backgrounded. Without it Android suspends the
-           process and the peer keeps showing this device as connected. Not exported - only
-           this app may start it. -->
-      <service
-          android:name="ai.offgridmobile.sync.MeshResidencyService"
-          android:enabled="true"
-          android:exported="false"
-          android:foregroundServiceType="connectedDevice" />
 
     </application>
 </manifest>

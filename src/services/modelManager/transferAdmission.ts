@@ -2,7 +2,7 @@ import { statFile } from '../../utils/fileStat';
 import {
   ogamModelTransferBlocker,
   type TransferredModelManifest,
-} from '@offgrid/sync';
+} from '@offgrid/chat';
 import type { DownloadedModel, ModelFile } from '../../types';
 import {
   buildDownloadedModel,

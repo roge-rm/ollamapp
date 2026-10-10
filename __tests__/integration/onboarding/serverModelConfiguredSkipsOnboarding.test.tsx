@@ -81,8 +81,8 @@ async function addAndConnectServerViaUI(ui: ReturnType<typeof render>) {
   fireEvent.press(await waitFor(() => ui.getByText('Add Server')));
 
   // Fill the real modal (targeted by placeholders, like the RemoteServersScreen flow).
-  fireEvent.changeText(await waitFor(() => ui.getByPlaceholderText('Off Grid AI Desktop')), 'My Desktop');
-  fireEvent.changeText(ui.getByPlaceholderText('http://192.168.1.50:7878'), 'http://localhost:1234');
+  fireEvent.changeText(await waitFor(() => ui.getByPlaceholderText('Ollama')), 'My Desktop');
+  fireEvent.changeText(ui.getByPlaceholderText('http://192.168.1.50:11434'), 'http://localhost:1234');
 
   // Test Connection first — the real probe runs over the faked /v1/models. Save stays disabled until it
   // succeeds, so this is a required real step (mirrors the real add-server UX).

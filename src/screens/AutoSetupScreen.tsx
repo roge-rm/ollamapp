@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Card } from '../components';
 import { LoadingDots } from '../components/LoadingDots';
-import { SLOTS, useSlot } from '../bootstrap/slotRegistry';
 import { SPACING, TYPOGRAPHY } from '../constants';
 import type { RootStackParamList } from '../navigation/types';
 import type { AutoSetupPlan } from '../services/autoSetupPlan';
@@ -44,7 +43,6 @@ export const AutoSetupScreen: React.FC<Props> = ({
   const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const VoiceIndicator = useSlot(SLOTS.autoSetupVoiceIndicator);
 
   useEffect(() => {
     session.load().catch(() => undefined);
@@ -146,12 +144,6 @@ export const AutoSetupScreen: React.FC<Props> = ({
                         </Text>
                       </View>
                     ))}
-                    {VoiceIndicator ? (
-                      <VoiceIndicator
-                        onPress={() => navigation.push('ProDetail')}
-                        style={styles.planItem}
-                      />
-                    ) : null}
                   </View>
                   <Text style={styles.total}>
                     {formatBytes(plan.totalBytes)} download

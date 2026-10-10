@@ -1208,26 +1208,6 @@ describe('generationService', () => {
   // checkSharePrompt — true branch (emitSharePrompt called)
   // ============================================================================
   describe('checkSharePrompt — triggers share', () => {
-    it('delegates to maybeScheduleSharePrompt with the text variant + generation count', async () => {
-      const { maybeScheduleSharePrompt } = require('../../../src/utils/sharePrompt');
-      (maybeScheduleSharePrompt as jest.Mock).mockClear();
-
-      const convId = setupWithConversation();
-      setupWithActiveModel();
-
-      mockedLlmService.generateResponse.mockImplementation(async (_msgs: any, { onStream, onComplete }: any = {}) => {
-        onStream?.({ content: 'Hi' });
-        onComplete?.('Hi');
-        return 'Hi';
-      });
-
-      await generationService.generateResponse(convId, [
-        createMessage({ role: 'user', content: 'Hi' }),
-      ]);
-
-      // The service owns the count; the once-per-session decision lives in the util.
-      expect(maybeScheduleSharePrompt).toHaveBeenCalledWith({ variant: 'text', count: expect.any(Number), hasEngaged: expect.any(Boolean), delayMs: expect.any(Number) });
-    });
   });
 
   // ============================================================================

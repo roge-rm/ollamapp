@@ -19,9 +19,9 @@ import { ModelsSummaryRow } from '../../../src/components/models/ModelsSummaryRo
 const labels = { text: 'Qwen3.5', image: '—', voice: 'Kokoro · Warm', speech: 'Base' };
 
 describe('ModelsSummaryRow', () => {
-  it('renders the four model-type captions and the label', () => {
+  it('renders the three model-type captions and the label', () => {
     const { getByText } = render(<ModelsSummaryRow labels={labels} isLoading={false} onPress={jest.fn()} />);
-    ['Models', 'Text', 'Image', 'Voice', 'Speech'].forEach((t) => expect(getByText(t)).toBeTruthy());
+    ['Models', 'Text', 'Image', 'Speech'].forEach((t) => expect(getByText(t)).toBeTruthy());
   });
 
   it('opens on press', () => {

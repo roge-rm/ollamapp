@@ -36,14 +36,14 @@ const baseProps = {
 describe('ModelsManagerSheet', () => {
   it('renders a row per model type', () => {
     const { getByTestId } = render(<ModelsManagerSheet {...baseProps} />);
-    ['text', 'image', 'voice', 'speech'].forEach((t) => expect(getByTestId(`models-row-${t}`)).toBeTruthy());
+    ['text', 'image', 'speech'].forEach((t) => expect(getByTestId(`models-row-${t}`)).toBeTruthy());
   });
 
   it('opens the picker for a tapped row', () => {
     const onOpenRow = jest.fn();
     const { getByTestId } = render(<ModelsManagerSheet {...baseProps} onOpenRow={onOpenRow} />);
-    fireEvent.press(getByTestId('models-row-voice'));
-    expect(onOpenRow).toHaveBeenCalledWith('voice');
+    fireEvent.press(getByTestId('models-row-speech'));
+    expect(onOpenRow).toHaveBeenCalledWith('speech');
   });
 
   it('shows Eject All only when a model is active', () => {

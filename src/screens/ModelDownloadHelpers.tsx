@@ -3,15 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import { LoadingDots } from '../components/LoadingDots';
 import { Card } from '../components';
 import type { ThemeColors } from '../theme';
-import { TYPOGRAPHY, SPACING, FONTS, OFF_GRID_DESKTOP_URL } from '../constants';
+import { TYPOGRAPHY, SPACING, FONTS } from '../constants';
 import { RemoteModel, RemoteServer } from '../types';
 export { fetchModelFiles } from '../services/modelCatalogFiles';
-import { withUtm } from '../utils/utm';
 
 // ---------------------------------------------------------------------------
 // Model file fetching
@@ -107,14 +105,8 @@ export const NetworkSection: React.FC<{
       {!isCheckingNetwork && !hasServers && (
         <>
           <Text style={styles.emptyText}>
-            No Off Grid AI Desktop, Ollama, or LM Studio server found. Scan again or add one.
+            No Ollama or LM Studio server found. Scan again or add one.
           </Text>
-          <TouchableOpacity
-            onPress={() => Linking.openURL(withUtm(OFF_GRID_DESKTOP_URL, 'model-download')).catch(() => {})}
-            testID="onboarding-get-desktop"
-          >
-            <Text style={[styles.getDesktopLink, { color: colors.primary }]}>Get Off Grid AI Desktop</Text>
-          </TouchableOpacity>
         </>
       )}
 

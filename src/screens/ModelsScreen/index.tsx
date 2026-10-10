@@ -11,16 +11,13 @@ import { useModelsScreen } from './useModelsScreen';
 import { createStyles } from './styles';
 import { TextModelsTab } from './TextModelsTab';
 import { ImageModelsTab } from './ImageModelsTab';
-import { VoiceModelsUpsell } from '../../components/models/VoiceModelsUpsell';
 import { TranscriptionModelsTab } from './TranscriptionModelsTab';
-import { useSlot, SLOTS } from '../../bootstrap/slotRegistry';
 import type { ModelTab } from './types';
 import { ScreenHeader } from '../../components/ScreenHeader';
 
 const MODEL_TABS: ReadonlyArray<{ key: ModelTab; label: string; testID?: string }> = [
   { key: 'text', label: 'Text' },
   { key: 'image', label: 'Image' },
-  { key: 'voice', label: 'Voice', testID: 'voice-models-tab' },
   { key: 'transcription', label: 'Speech', testID: 'transcription-models-tab' },
 ];
 
@@ -47,10 +44,6 @@ export const ModelsScreen: React.FC<ModelsScreenProps> = ({ embedded = false }) 
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const vm = useModelsScreen();
-  // Pro fills this slot with the real voice-models panel (engine + downloads).
-  // The Voice tab always renders; when the slot is empty (free / non-pro) we
-  // show an upsell so users can see what Pro adds.
-  const VoiceModelsPanel = useSlot(SLOTS.modelsScreenVoiceTab);
   const route = useRoute<RouteProp<MainTabParamList, 'ModelsTab'>>();
 
   // Reset to model list view when tab loses focus (e.g. user switches away)
@@ -238,13 +231,6 @@ export const ModelsScreen: React.FC<ModelsScreenProps> = ({ embedded = false }) 
           setUserChangedBackendFilter={vm.setUserChangedBackendFilter}
           isRecommendedModel={vm.isRecommendedModel}
         />
-      )}
-
-      {/* Voice Models Tab: pro panel when registered, otherwise an upsell. */}
-      {vm.activeTab === 'voice' && (
-        VoiceModelsPanel
-          ? <VoiceModelsPanel showRemoteModels={false} />
-          : <VoiceModelsUpsell onGetPro={() => vm.navigation.navigate('ProDetail')} />
       )}
 
       {/* Transcription Models Tab (speech-to-text, core). */}

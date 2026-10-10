@@ -44,8 +44,8 @@ describe('Models manager sheet — remote TEXT selection carries the cloud marke
   const connectServerViaUI = async (env: ReturnType<typeof setup>) => {
     const { React, rtl, RemoteServerEditorScreen } = env;
     const srv = rtl.render(React.createElement(RemoteServerEditorScreen));
-    rtl.fireEvent.changeText(await rtl.waitFor(() => srv.getByPlaceholderText('Off Grid AI Desktop')), 'My LM Studio');
-    rtl.fireEvent.changeText(srv.getByPlaceholderText('http://192.168.1.50:7878'), 'http://localhost:1234');
+    rtl.fireEvent.changeText(await rtl.waitFor(() => srv.getByPlaceholderText('Ollama')), 'My LM Studio');
+    rtl.fireEvent.changeText(srv.getByPlaceholderText('http://192.168.1.50:11434'), 'http://localhost:1234');
     rtl.fireEvent.press(srv.getByTestId('test-connection'));
     await rtl.waitFor(() => { expect(srv.queryByText(/Connected \(/)).not.toBeNull(); }, { timeout: 4000 });
     rtl.fireEvent.press(srv.getByTestId('save-server'));
@@ -92,7 +92,7 @@ describe('Models manager sheet — remote TEXT selection carries the cloud marke
     rtl.fireEvent.press(home.getByTestId('app-sheet-back'));
     await rtl.waitFor(() => { expect(home.queryByText('MODELS')).not.toBeNull(); }, { timeout: 4000 });
     expect(home.queryByTestId('models-row-image')).not.toBeNull();
-    expect(home.queryByTestId('models-row-voice')).not.toBeNull();
+    expect(home.queryByTestId('models-row-voice')).toBeNull();
     expect(home.queryByTestId('models-row-speech')).not.toBeNull();
     home.unmount();
   });

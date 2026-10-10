@@ -3,14 +3,13 @@ import { View, Text, TouchableOpacity, Linking, ScrollView, Image, StyleSheet } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme, useThemedStyles } from '../theme';
 import type { ThemeColors, ThemeShadows } from '../theme';
 import { SPACING, TYPOGRAPHY } from '../constants';
 import { MadeWithLove } from '../components/MadeWithLove';
 import { AnimatedListItem } from '../components/AnimatedListItem';
 import { useFocusTrigger } from '../hooks/useFocusTrigger';
-import { GITHUB_URL, FOLLOW_X_URL, SLACK_INVITE_URL } from '../utils/sharePrompt';
+const ORIGINAL_URL = 'https://github.com/off-grid-ai/OGAM';
 import { withUtm } from '../utils/utm';
 import { appVersion } from '../utils/appVersion';
 
@@ -36,7 +35,7 @@ export const AboutScreen: React.FC = () => {
         {/* App identity */}
         <View style={styles.heroSection}>
           <Image source={require('../assets/logo.png')} style={staticStyles.appIcon} />
-          <Text style={styles.appName}>Off Grid AI</Text>
+          <Text style={styles.appName}>Ollamapp</Text>
           <Text style={styles.version}>Version {appVersion()}</Text>
           <Text style={styles.description}>
             Local AI that runs entirely on your phone. No cloud, no telemetry, nothing leaves the device.
@@ -50,52 +49,14 @@ export const AboutScreen: React.FC = () => {
             staggerMs={40}
             trigger={focusTrigger}
             style={[styles.navItem, styles.navItemLast]}
-            onPress={() => Linking.openURL(GITHUB_URL)}
+            onPress={() => Linking.openURL(ORIGINAL_URL)}
           >
             <View style={styles.navItemIcon}>
               <Icon name="github" size={16} color={colors.textSecondary} />
             </View>
             <View style={styles.navItemContent}>
-              <Text style={styles.navItemTitle}>Open Source</Text>
-              <Text style={styles.navItemDesc}>View the source on GitHub</Text>
-            </View>
-            <Icon name="external-link" size={14} color={colors.textMuted} />
-          </AnimatedListItem>
-        </View>
-
-        {/* Follow / Community */}
-        <View style={styles.navSection}>
-          <AnimatedListItem
-            index={1}
-            staggerMs={40}
-            trigger={focusTrigger}
-            style={styles.navItem}
-            testID="about-follow-on-x"
-            onPress={() => Linking.openURL(FOLLOW_X_URL)}
-          >
-            <View style={styles.navItemIcon}>
-              <Icon name="twitter" size={16} color={colors.primary} />
-            </View>
-            <View style={styles.navItemContent}>
-              <Text style={styles.navItemTitle}>Follow @alichherawalla on X</Text>
-              <Text style={styles.navItemDesc}>New features first, promo discounts, roadmap</Text>
-            </View>
-            <Icon name="external-link" size={14} color={colors.textMuted} />
-          </AnimatedListItem>
-          <AnimatedListItem
-            index={2}
-            staggerMs={40}
-            trigger={focusTrigger}
-            style={[styles.navItem, styles.navItemLast]}
-            testID="about-join-slack"
-            onPress={() => Linking.openURL(SLACK_INVITE_URL)}
-          >
-            <View style={styles.navItemIcon}>
-              <IconMC name="slack" size={16} color={colors.primary} />
-            </View>
-            <View style={styles.navItemContent}>
-              <Text style={styles.navItemTitle}>Join the Slack community</Text>
-              <Text style={styles.navItemDesc}>Issues fixed fast, debug together, early access</Text>
+              <Text style={styles.navItemTitle}>Based on Off Grid AI</Text>
+              <Text style={styles.navItemDesc}>The open source app this is built from</Text>
             </View>
             <Icon name="external-link" size={14} color={colors.textMuted} />
           </AnimatedListItem>
@@ -104,7 +65,7 @@ export const AboutScreen: React.FC = () => {
         {/* Built by Wednesday row */}
         <View style={styles.navSection}>
           <AnimatedListItem
-            index={3}
+            index={1}
             staggerMs={40}
             trigger={focusTrigger}
             style={[styles.navItem, styles.navItemLast]}

@@ -3,7 +3,7 @@ import type {
   SyncedAssistantTimelineEntry,
   SyncedToolArtifact,
   SyncedTurnStatus,
-} from '@offgrid/sync';
+} from '@offgrid/chat';
 // Model source and credibility types
 export type ModelSource =
   | 'lmstudio'

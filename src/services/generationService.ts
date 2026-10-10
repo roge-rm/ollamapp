@@ -10,8 +10,6 @@ import type { ToolResult } from './tools/types';
 import { providerRegistry } from './providers';
 import { contextCompactionService } from './contextCompaction';
 import logger from '../utils/logger';
-import { maybeScheduleSharePrompt } from '../utils/sharePrompt';
-import { checkProPromptForText } from './proPrompt';
 import {
   buildGenerationMetaImpl,
   buildToolLoopHandlersImpl,
@@ -26,7 +24,6 @@ import {
   generateRemoteWithToolsImpl,
 } from './generationRemoteHelpers';
 
-const SHARE_PROMPT_DELAY_MS = 1500;
 type StreamChunk = string | { content?: string; reasoningContent?: string };
 type FallbackRoute =
   | { kind: 'remote'; serverId: string; id: string; name: string }
@@ -142,11 +139,8 @@ class GenerationService {
     this.notifyListeners();
   }
 
-  private checkSharePrompt(delayMs = SHARE_PROMPT_DELAY_MS): void {
-    const s = useAppStore.getState();
-    const count = s.incrementTextGenerationCount();
-    maybeScheduleSharePrompt({ variant: 'text', count, hasEngaged: s.hasEngagedSharePrompt, delayMs });
-    checkProPromptForText(delayMs);
+  private checkSharePrompt(_delayMs?: number): void {
+    useAppStore.getState().incrementTextGenerationCount();
   }
 
   private buildToolLoopHandlers() { return buildToolLoopHandlersImpl(this); }

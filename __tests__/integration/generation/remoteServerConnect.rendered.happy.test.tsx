@@ -40,8 +40,8 @@ describe('T046 (rendered) — add a remote server → it connects (connected sta
     const ui = render(<RemoteServerEditorScreen />);
 
     // Fill the real modal inputs (targeted by their placeholders).
-    fireEvent.changeText(await waitFor(() => ui.getByPlaceholderText('Off Grid AI Desktop')), 'My LM Studio');
-    fireEvent.changeText(ui.getByPlaceholderText('http://192.168.1.50:7878'), 'http://localhost:1234');
+    fireEvent.changeText(await waitFor(() => ui.getByPlaceholderText('Ollama')), 'My LM Studio');
+    fireEvent.changeText(ui.getByPlaceholderText('http://192.168.1.50:11434'), 'http://localhost:1234');
 
     // Tap Test Connection → the real probe runs over the faked /v1/models. The Save button stays disabled
     // until the probe succeeds, so this is a required real step.

@@ -22,7 +22,7 @@ import { RemoteModelField } from '../components/RemoteServerEditor/RemoteModelFi
 import { createStyles } from '../components/RemoteServerEditor/styles';
 
 // Private-LAN model servers use HTTP by design. Public addresses show an explicit warning.
-const PRIVATE_LAN_ENDPOINT_EXAMPLE = 'http://192.168.1.50:7878'; // NOSONAR
+const PRIVATE_LAN_ENDPOINT_EXAMPLE = 'http://192.168.1.50:11434'; // NOSONAR
 
 type Navigation = NativeStackNavigationProp<
   RootStackParamList,
@@ -58,7 +58,7 @@ export const RemoteServerEditorScreen: React.FC = () => {
           style={[styles.input, form.errors.name && styles.inputError]}
           value={form.name}
           onChangeText={form.setName}
-          placeholder="Off Grid AI Desktop"
+          placeholder="Ollama"
           placeholderTextColor={theme.colors.textMuted}
         />
         {form.errors.name ? (

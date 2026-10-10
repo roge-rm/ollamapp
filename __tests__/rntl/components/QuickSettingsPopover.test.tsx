@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
 import { QuickSettingsPopover } from '../../../src/components/ChatInput/Popovers';
 import { useAppStore } from '../../../src/stores';
 import { getTheme } from '../../../src/theme';
@@ -54,31 +54,9 @@ describe('QuickSettingsPopover', () => {
     expect(toolIcon.props.style.color).not.toBe(COLORS.primary);
   });
 
-  it('renders a Pro Tools row with a crown icon (and no MCP label)', () => {
-    const { getByText, queryByText, getByTestId } = render(
-      <QuickSettingsPopover {...baseProps} mcpToolCount={0} />,
-    );
-    expect(getByText('Pro Tools')).toBeTruthy();
-    expect(queryByText('MCP')).toBeNull();
-    expect(getByTestId('mci-crown')).toBeTruthy();
-  });
-
-  it('shows the active count badge on Pro Tools when something is active', () => {
-    const { getByText } = render(<QuickSettingsPopover {...baseProps} mcpToolCount={3} />);
-    expect(getByText('3')).toBeTruthy();
-  });
-
-  it('hides the Pro Tools badge when nothing is active', () => {
-    const { queryByText } = render(<QuickSettingsPopover {...baseProps} mcpToolCount={0} />);
-    expect(queryByText('0')).toBeNull();
-  });
-
-  it('invokes onMcpPress when the Pro Tools row is pressed', () => {
-    const onMcpPress = jest.fn();
-    const { getByTestId } = render(
-      <QuickSettingsPopover {...baseProps} mcpToolCount={1} onMcpPress={onMcpPress} />,
-    );
-    fireEvent.press(getByTestId('quick-pro-tools'));
-    expect(onMcpPress).toHaveBeenCalledTimes(1);
+  it('has no Pro Tools row', () => {
+    const { queryByText, queryByTestId } = render(<QuickSettingsPopover {...baseProps} />);
+    expect(queryByText('Pro Tools')).toBeNull();
+    expect(queryByTestId('quick-pro-tools')).toBeNull();
   });
 });

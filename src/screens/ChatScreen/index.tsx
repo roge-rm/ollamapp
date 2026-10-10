@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FlatList, Keyboard, Platform } from 'react-native';
 // Edge-to-edge-aware KeyboardAvoidingView. RN's own version leaves a residual
 // padding band on Android under edge-to-edge (adjustResize is a no-op there);
@@ -6,19 +6,12 @@ import { FlatList, Keyboard, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useUiModeStore } from '../../stores/uiModeStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
 import {
   CustomAlert,
   hideAlert,
   showAlert,
-  SharePromptSheet,
-  ProAhaSheet,
 } from '../../components';
 import { useEjectAllModels } from '../../hooks/useEjectAllModels';
-import { subscribeSharePrompt } from '../../utils/sharePrompt';
-import { subscribeProPrompt } from '../../services/proPrompt';
 import type { Conversation, Message } from '../../types';
 import { useTheme, useThemedStyles } from '../../theme';
 import { createStyles } from './styles';
@@ -47,8 +40,6 @@ function countConversationImages(conv: Conversation | undefined): number {
 export const ChatScreen: React.FC = () => {
   const flatListRef = React.useRef<FlatList>(null);
   const isNearBottomRef = React.useRef(true);
-  const rootNavigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const chat = useChatScreen();
@@ -146,20 +137,6 @@ export const ChatScreen: React.FC = () => {
   // (same as main, on both platforms). The custom androidKbPad mechanism that
   // previously lived here floated the input mid-screen, so it was removed.
 
-  const [sharePromptVisible, setSharePromptVisible] = useState(false);
-  useEffect(() => subscribeSharePrompt(() => setSharePromptVisible(true)), []);
-
-  const [proAhaVisible, setProAhaVisible] = useState(false);
-  const proAhaShownThisSession = useRef(false);
-  useEffect(
-    () =>
-      subscribeProPrompt(() => {
-    if (proAhaShownThisSession.current) return;
-    proAhaShownThisSession.current = true;
-    setProAhaVisible(true);
-      }),
-    [],
-  );
   // Only ONE AttachStep mounted at a time to avoid waypoint dots/lines.
 
   React.useEffect(() => {
@@ -378,15 +355,6 @@ export const ChatScreen: React.FC = () => {
         />
       </KeyboardAvoidingView>
       {alertEl}
-      <SharePromptSheet
-        visible={sharePromptVisible}
-        onClose={() => setSharePromptVisible(false)}
-      />
-      <ProAhaSheet
-        visible={proAhaVisible}
-        onClose={() => setProAhaVisible(false)}
-        onRegister={() => rootNavigation.navigate('ProDetail')}
-      />
     </SafeAreaView>
   );
 };

@@ -21,7 +21,6 @@ type Props = {
 const TYPE_ICONS: { type: ModelRowType; icon: string; caption: string }[] = [
   { type: 'text', icon: 'message-square', caption: 'Text' },
   { type: 'image', icon: 'image', caption: 'Image' },
-  { type: 'voice', icon: 'volume-2', caption: 'Voice' },
   { type: 'speech', icon: 'mic', caption: 'Speech' },
 ];
 

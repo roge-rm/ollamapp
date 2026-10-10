@@ -1,4 +1,4 @@
-import { hasProAccess, type ProDeviceAdmission } from '@offgrid/sync';
+type ProDeviceAdmission = 'unknown' | 'active' | 'inactive';
 
 export interface ProAccessSlice {
   /** Cached protected Pro credential grants offline feature access. */
@@ -66,18 +66,7 @@ export function createProAccessSlice(set: SetProAccessState): ProAccessSlice {
   };
 }
 
-/**
- * Does this install have Pro access right now?
- *
- * The RULE is hasProAccess in @offgrid/sync, shared with the desktop - two implementations of "is this
- * device still paid for" would eventually disagree about a live device. This only supplies the store's
- * facts to it: what credential exists, and what the roster last said about this device.
- */
-export function selectHasProAccess(state: ProAccessSlice): boolean {
-  return hasProAccess({
-    // A saved key is not proof of current access. The provider projects only a
-    // locally unexpired credential into hasRegisteredPro/isProActive.
-    hasCredential: state.hasRegisteredPro || state.isProActive,
-    admission: state.proDeviceAdmission,
-  });
+/** This build has no Pro, so nothing is ever unlocked. */
+export function selectHasProAccess(_state: ProAccessSlice): boolean {
+  return false;
 }

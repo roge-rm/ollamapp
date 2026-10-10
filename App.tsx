@@ -1,20 +1,17 @@
 /**
- * Off Grid - On-Device AI Chat Application
+ * Ollamapp - On-Device AI Chat Application
  * Private AI assistant that runs entirely on your device
  */
 
 import 'react-native-gesture-handler';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, LogBox } from 'react-native';
+import { View, StyleSheet, LogBox } from 'react-native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { AppNavigator } from './src/navigation';
-import {
-  appNavigationRef,
-  useProExpiryRedirect,
-} from './src/navigation/useProExpiryRedirect';
+import { appNavigationRef } from './src/navigation/navigationRef';
 import { useTheme } from './src/theme';
 import { hardwareService, modelManager, authService, ragService, remoteServerManager } from './src/services';
 import logger from './src/utils/logger';
@@ -22,7 +19,6 @@ import { useAppStore, useAuthStore, useRemoteServerStore, useWhisperStore } from
 import { useDebugLogsStore } from './src/stores/debugLogsStore';
 import { initDebugLogFile, appendDebugLine, stopDebugLogFile } from './src/utils/debugLogFile';
 import { startStartupMemoryProbe } from './src/services/startupMemoryProbe';
-import { loadProFeatures } from './src/bootstrap/loadProFeatures';
 import { hydrateDownloadStore } from './src/services/downloadHydration';
 import { initActiveDownloadPersistence } from './src/services/activeDownloadPersistence';
 import { restoreQueuedDownloads } from './src/services/restoreQueuedDownloads';
@@ -36,7 +32,6 @@ import { LockScreen } from './src/screens';
 import { useAppState } from './src/hooks/useAppState';
 import { useDownloadStore } from './src/stores/downloadStore';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { DebugLogsScreen } from './src/components/DebugLogsScreen';
 import { LoadingDots } from './src/components/LoadingDots';
 
 LogBox.ignoreAllLogs(); // Suppress all logs
@@ -79,47 +74,6 @@ const ensureRemoteServerStoreHydrated = async () => {
   }
 };
 
-export function DevSyncStrip() {
-  const [showHistory, setShowHistory] = useState(false);
-  const [now, setNow] = useState(Date.now());
-  const latest = useDebugLogsStore(state => {
-    for (let i = state.logs.length - 1; i >= 0; i--) {
-      if (/\[(?:BOOT-SYNC|StateSync|SYNC_DIAGNOSTIC|REPAIR)\]/i.test(state.logs[i].message)) {
-        return state.logs[i];
-      }
-    }
-    return undefined;
-  });
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const active = latest && now - latest.timestamp < 30000;
-  const operation = active
-    ? latest.message.replace(/^.*?\[(?:BOOT-SYNC|StateSync|SYNC_DIAGNOSTIC|REPAIR)\]\s*/i, '')
-    : 'Idle';
-
-  return (
-    <>
-      <Pressable
-        testID="dev-sync-strip"
-        accessibilityRole="button"
-        accessibilityLabel={`Sync: ${operation}. Show sync operations`}
-        onPress={() => setShowHistory(true)}
-        style={[styles.syncStrip, { top: insets.top, backgroundColor: colors.surface, borderColor: colors.border }]}
-      >
-        <Text numberOfLines={1} style={[styles.syncText, { color: colors.text }]}>
-          Sync: {operation}  ·  Tap for history
-        </Text>
-      </Pressable>
-      {showHistory ? <DebugLogsScreen visible onClose={() => setShowHistory(false)} syncOnly /> : null}
-    </>
-  );
-}
 
 function App() {
   useEffect(() => () => {
@@ -133,10 +87,8 @@ function App() {
   // the appRoot slot (TTS engine bridge) registers and this re-renders to mount
   // it live — no restart needed.
   const AppRoot = useSlot(SLOTS.appRoot);
-  const applyPendingProRedirect = useProExpiryRedirect();
   const [isInitializing, setIsInitializing] = useState(true);
   const startupGeneration = useRef(0);
-  const showSyncStatusBar = useAppStore(s => s.showSyncStatusBar);
   const setDeviceInfo = useAppStore((s) => s.setDeviceInfo);
   const setModelRecommendation = useAppStore((s) => s.setModelRecommendation);
   const setDownloadedModels = useAppStore((s) => s.setDownloadedModels);
@@ -344,17 +296,6 @@ function App() {
       // Initialize RAG database tables
       ragService.ensureReady().catch((err) => logger.error('Failed to initialize RAG service on startup', err));
 
-      try {
-        // Register the private Pro entitlement provider before the first status
-        // read, then activate only the capabilities that entitlement permits.
-        // loadProFeatures separately projects cached credential access from a
-        // Debug developer unlock; Sync reconciliation owns device admission.
-        logger.log('[BOOT] load pro features');
-        await loadProFeatures();
-      } catch (proError) {
-        logger.error('[App] Pro feature load failed, continuing without Pro:', proError);
-      }
-
       // Show the UI immediately
       logger.log('[BOOT] startup complete');
       setIsInitializing(false);
@@ -407,7 +348,6 @@ function App() {
             <SystemBars style={isDark ? 'light' : 'dark'} />
             <LoadingDots size={8} testID="startup-loading-dots" />
           </View>
-          {__DEV__ && showSyncStatusBar ? <DevSyncStrip /> : null}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     );
@@ -420,7 +360,6 @@ function App() {
         <SafeAreaProvider>
           <SystemBars style={isDark ? 'light' : 'dark'} />
           <LockScreen onUnlock={handleUnlock} />
-          {__DEV__ && showSyncStatusBar ? <DevSyncStrip /> : null}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     );
@@ -433,7 +372,6 @@ function App() {
         {AppRoot ? <AppRoot /> : null}
         <NavigationContainer
           ref={appNavigationRef}
-          onReady={applyPendingProRedirect}
           theme={{
             dark: isDark,
             colors: {
@@ -466,7 +404,6 @@ function App() {
         >
           <AppNavigator />
         </NavigationContainer>
-        {__DEV__ && showSyncStatusBar ? <DevSyncStrip /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -480,20 +417,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  syncStrip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    elevation: 1000,
-    borderBottomWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  syncText: {
-    fontFamily: 'Menlo',
-    fontSize: 11,
   },
 });
 

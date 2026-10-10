@@ -32,7 +32,7 @@ export const TOOL_CALL_CLOSERS: string[] = [...SHARED_TOOL_CALL_CLOSERS];
  */
 export const XML_TOOL_CALL_FUNCTION_MARKER =
   SHARED_XML_TOOL_CALL_FUNCTION_MARKER;
-export { XML_TOOL_CALL_PARAMETER_MARKER } from '@offgrid/sync';
+export { XML_TOOL_CALL_PARAMETER_MARKER } from '@offgrid/chat';
 const XML_TOOL_CALL_FUNCTION_CLOSER = '</function>';
 
 const escapeRegExp = (s: string): string =>
@@ -252,4 +252,4 @@ import {
   partialTagSuffix as sharedPartialTagSuffix,
   stripChatControlTokens,
   type ReasoningDelimiter as SharedReasoningDelimiter,
-} from '@offgrid/sync';
+} from '@offgrid/chat';

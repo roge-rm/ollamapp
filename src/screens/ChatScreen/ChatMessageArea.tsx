@@ -26,11 +26,7 @@ import { getPlaceholderText, useChatScreen } from './useChatScreen';
 import { createStyles } from './styles';
 import { useTheme } from '../../theme';
 import { useAppStore } from '../../stores';
-import { getToolExtensions } from '../../services/tools/extensions';
-import { enableAssistantTools, useAssistantToolAvailability, useExtensionToolCount } from '../../services/tools/useExtensionToolCount';
 import { AVAILABLE_TOOLS } from '../../services/tools';
-import { useOpenProTools } from '../../hooks/useOpenProTools';
-import { useIsProActive } from '../../hooks/useIsProActive';
 import { getSlot, SLOTS } from '../../bootstrap/slotRegistry';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -166,36 +162,11 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
   const interfaceMode = useUiModeStore(s => s.interfaceMode);
   const tabNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const toolCountHintDismissed = useAppStore(state => state.toolCountHintDismissed);
-  // Subscribe to Pro activation so this re-renders the moment a license is
-  // activated. loadProFeatures() registers the tool extensions + the Pro Tools
-  // screen in one pass; without this subscription the getToolExtensions() reads
-  // below are non-reactive and the Pro Tools badge stayed stale until an app
-  // restart. Return is intentionally unused — the count is naturally 0 when Pro
-  // is inactive (no extensions registered); we only need the re-render.
-  const isProActive = useIsProActive();
-  const assistantAvailability = useAssistantToolAvailability();
-  // extToolCount is the live MCP tool count (the email/calendar extension reports 0
-  // here because those live in settings.enabledTools — see EmailCalendarExtension).
-  // Subscribed, not read at render: deactivating an MCP server cleared the store but the mounted
-  // chat never re-rendered, so the badge said 3 while the Pro tools screen said none.
-  const extToolCount = useExtensionToolCount();
-  // Pro tools (email/calendar) are toggled through settings.enabledTools, so count
-  // how many of them are on and fold MCP in — this is the "Pro Tools" badge.
-  const proToolIds = getToolExtensions().flatMap(e =>
-    (e.getToolDefinitions?.() ?? []).map(t => t.id),
-  );
-  const proToolsActiveCount = proToolIds.filter(id =>
-    chat.enabledTools.includes(id),
-  ).length;
-  const proToolsCount = proToolsActiveCount + extToolCount;
-  // The free Tools page lists only AVAILABLE_TOOLS, so its badge counts just those
-  // (pro email/calendar ids are surfaced under Pro Tools instead, not double-counted).
   const freeToolIds = new Set(AVAILABLE_TOOLS.map(t => t.id));
   const freeToolsCount = chat.enabledTools.filter(id =>
     freeToolIds.has(id),
   ).length;
-  const totalToolCount = freeToolsCount + proToolsCount;
-  const handleProToolsPress = useOpenProTools();
+  const totalToolCount = freeToolsCount;
   const showSettingsDot = totalToolCount > 3 && !toolCountHintDismissed;
   const [inputHeight, setInputHeight] = useState(84);
   const flatListHeightRef = useRef(0);
@@ -424,21 +395,11 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
           onToolsPress={() => tabNav.navigate('Tools')}
           enabledToolCount={freeToolsCount}
           showSettingsDot={showSettingsDot}
-          mcpToolCount={proToolsCount}
-          onMcpPress={handleProToolsPress}
           supportsToolCalling={chat.supportsToolCalling}
           supportsThinking={chat.supportsThinking}
           onRepairVision={handleRepairVision}
           isRemote={chat.activeModelInfo.isRemote}
           onImagePress={chat.handleImagePress}
-          assistantAvailability={
-            !isProActive
-              ? 'no-pro'
-              : assistantAvailability
-          }
-          onAssistantEnableTools={enableAssistantTools}
-          onAssistantUpgrade={() => tabNav.navigate('ProDetail')}
-          onAssistantSetupSync={() => tabNav.navigate('Sync')}
         />
       </View>
     </>

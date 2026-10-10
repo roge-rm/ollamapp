@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Animated, Platform, ActionSheetIOS } from 'react-native';
+import { View, TextInput, TouchableOpacity, Animated, Platform, ActionSheetIOS } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { GodIcon } from '../GodIcon';
 import { useTheme, useThemedStyles } from '../../theme';
 import { ImageModeState, MediaAttachment } from '../../types';
 import { VoiceRecordButton, type VoiceRecordInteractionMode } from '../VoiceRecordButton';
@@ -19,11 +18,7 @@ import { QuickSettingsPopover, AttachPickerPopover } from './Popovers';
 import { useKeyboardAwarePopover } from './useKeyboardAwarePopover';
 import { useAppStore } from '../../stores';
 import { useUiModeStore } from '../../stores';
-import { getSlot, SLOTS } from '../../bootstrap/slotRegistry';
-import { AppSheet } from '../AppSheet';
-import { Button } from '../Button';
 
-type AssistantAvailability = 'no-pro' | 'needs-sync' | 'unavailable' | 'ready';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: MediaAttachment[], imageMode?: ImageModeState, assistantEnabled?: boolean) => void;
@@ -42,8 +37,6 @@ interface ChatInputProps {
   onToolsPress?: () => void;
   enabledToolCount?: number;
   supportsToolCalling?: boolean;
-  mcpToolCount?: number;
-  onMcpPress?: () => void;
   supportsThinking?: boolean;
   onRepairVision?: () => void;
   /** Whether the active text model is a remote (server) model. Remote models
@@ -56,10 +49,6 @@ interface ChatInputProps {
   /** Opens the shared fullscreen image viewer when a pending (pre-send)
    * attachment thumbnail is tapped — the same handler in-message images use. */
   onImagePress?: (uri: string) => void;
-  assistantAvailability?: AssistantAvailability;
-  onAssistantUpgrade?: () => void;
-  onAssistantSetupSync?: () => void;
-  onAssistantEnableTools?: () => boolean;
   assistantSelected?: boolean;
   onAssistantSelectedChange?: (selected: boolean) => void;
 }
@@ -153,16 +142,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   enabledToolCount = 0,
   supportsToolCalling = false,
   supportsThinking = false,
-  mcpToolCount = 0,
-  onMcpPress,
   onRepairVision,
   isRemote = false,
   showSettingsDot = false,
   onImagePress,
-  assistantAvailability = 'no-pro',
-  onAssistantUpgrade,
-  onAssistantSetupSync,
-  onAssistantEnableTools,
   assistantSelected,
   onAssistantSelectedChange,
 }) => {
@@ -175,16 +158,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (onAssistantSelectedChange) onAssistantSelectedChange(selected);
     else setLocalAssistantEnabled(selected);
   };
-  const [assistantTransitioning, setAssistantTransitioning] = useState(false);
-  const [assistantGateOpen, setAssistantGateOpen] = useState(false);
   const [imageMode, setImageMode] = useState<ImageModeState>('auto');
   const [voiceInteractionMode, setVoiceInteractionMode] = useState<VoiceRecordInteractionMode>('idle');
   const [alertState, setAlertState] = useState<AlertState>(initialAlertState);
   const quickSettings = useKeyboardAwarePopover();
   const attachPicker = useKeyboardAwarePopover();
-  const voicePicker = useKeyboardAwarePopover();
   const inputRef = useRef<TextInput>(null);
-  const assistantTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attachmentsRef = useRef<MediaAttachment[]>([]);
   const hasText = message.length > 0;
   const iconsAnim = useRef(new Animated.Value(0)).current;
@@ -196,12 +175,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       useNativeDriver: false,
     }).start();
   }, [hasText, iconsAnim]);
-
-  useEffect(() => () => {
-    if (assistantTransitionTimer.current) {
-      clearTimeout(assistantTransitionTimer.current);
-    }
-  }, []);
 
   const { attachments, removeAttachment, clearAttachments, handlePickImage, handlePickDocument, addAudioAttachment } = useAttachments(setAlertState);
   attachmentsRef.current = attachments;
@@ -250,14 +223,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     isStartingRecording ||
     isTranscribing;
 
-  const thinkingEnabled = useAppStore(state => state.settings.thinkingEnabled);
-  const updateAppSettings = useAppStore(state => state.updateSettings);
-
-  const handleThinkingToggle = () => {
-    triggerHaptic('impactLight');
-    updateAppSettings({ thinkingEnabled: !thinkingEnabled });
-  };
-
   const canSend = (message.trim().length > 0 || attachments.length > 0) && !disabled;
 
   const handleSend = () => {
@@ -270,11 +235,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     } else {
       onSend(message.trim(), outgoingAttachments, imageMode);
     }
-    if (assistantTransitionTimer.current) {
-      clearTimeout(assistantTransitionTimer.current);
-      assistantTransitionTimer.current = null;
-    }
-    setAssistantTransitioning(false);
     setAssistantEnabled(false);
     setMessage('');
     clearAttachments();
@@ -320,48 +280,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleQuickSettingsPress = () => quickSettings.show();
 
-  const handleAssistantPress = () => {
-    triggerHaptic('impactLight');
-    if (assistantAvailability !== 'ready') {
-      setAssistantGateOpen(true);
-      return;
-    }
-    if (!assistantEnabled && !onAssistantEnableTools?.()) {
-      setAssistantGateOpen(true);
-      return;
-    }
-    setAssistantEnabled(!assistantEnabled);
-    setAssistantTransitioning(true);
-    if (assistantTransitionTimer.current) {
-      clearTimeout(assistantTransitionTimer.current);
-    }
-    assistantTransitionTimer.current = setTimeout(() => {
-      setAssistantTransitioning(false);
-      assistantTransitionTimer.current = null;
-    }, ANIM_DURATION_IN);
-  };
-
-  const assistantGate = assistantAvailability === 'no-pro'
-    ? {
-        title: 'Assistant requires Pro',
-        body: 'Assistant uses Web Use and Computer Use on a connected Desktop.',
-        action: 'View Pro',
-        onPress: onAssistantUpgrade,
-      }
-    : assistantAvailability === 'unavailable'
-      ? {
-          title: 'Desktop tasks unavailable',
-          body: 'This Desktop is connected, but Web Use and Computer Use are not available. Allow remote tasks on the Desktop and try again.',
-          action: 'OK',
-          onPress: undefined,
-        }
-    : {
-        title: 'Connect a Desktop',
-        body: 'Set up Sync and connect Off Grid AI Desktop to use Web Use and Computer Use.',
-        action: 'Set up Sync',
-        onPress: onAssistantSetupSync,
-      };
-
   const handleAttachPress = () => {
     logger.log(`[COMPOSER-SM] attach pressed platform=${Platform.OS} supportsVision=${supportsVision}`);
     if (Platform.OS === 'ios') {
@@ -383,75 +301,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       attachPicker.show();
     }
   };
-
-  // ─── Audio mode: pro renders the mic-only layout via a slot ─────────────────
-  // Free builds have no audio slot, so interfaceMode never becomes 'audio' and
-  // this branch is skipped entirely.
-  const AudioInput = getSlot(SLOTS.chatInputAudioMode);
-  if (isAudioMode && AudioInput) {
-    return (
-      <>
-      <AudioInput
-        styles={styles}
-        disabled={disabled}
-        onSend={onSend}
-        isGenerating={isGenerating}
-        imageMode={imageMode}
-        imageModelLoaded={imageModelLoaded}
-        supportsThinking={supportsThinking}
-        supportsToolCalling={supportsToolCalling}
-        enabledToolCount={enabledToolCount}
-        thinkingEnabled={thinkingEnabled}
-        attachments={attachments}
-        onRemoveAttachment={removeAttachment}
-        onClearAttachments={clearAttachments}
-        queueCount={queueCount}
-        queuedTexts={queuedTexts}
-        onClearQueue={onClearQueue}
-        isRecording={isRecording}
-        voiceAvailable={voiceAvailable}
-        isModelLoading={isModelLoading}
-        isTranscribing={isTranscribing}
-        partialResult={partialResult}
-        error={error}
-        onStartRecording={startRecording}
-        onStopRecording={stopRecording}
-        onCancelRecording={cancelRecording}
-        onStop={onStop}
-        onImageModeToggle={handleImageModeToggle}
-        onThinkingToggle={handleThinkingToggle}
-        onToolsPress={onToolsPress}
-        onMcpPress={onMcpPress}
-        mcpToolCount={mcpToolCount}
-        onVisionPress={handleVisionPress}
-        onPickDocument={handlePickDocument}
-        onAttachPress={handleAttachPress}
-        attachPicker={attachPicker}
-        voicePicker={voicePicker}
-        quickSettings={quickSettings}
-        supportsVision={supportsVision}
-        alertState={alertState}
-        setAlertState={setAlertState}
-        assistantSelected={assistantEnabled}
-        onAssistantPress={handleAssistantPress}
-      />
-      <AppSheet
-        visible={assistantGateOpen}
-        onClose={() => setAssistantGateOpen(false)}
-        title={assistantGate.title}
-        enableDynamicSizing
-      >
-        <View style={styles.assistantGateContent}>
-          <Text style={styles.assistantGateText}>{assistantGate.body}</Text>
-          <Button title={assistantGate.action} onPress={() => {
-            setAssistantGateOpen(false);
-            assistantGate.onPress?.();
-          }} />
-        </View>
-      </AppSheet>
-      </>
-    );
-  }
 
   // Pro-only inline Chat↔Audio toggle (empty slot in free builds → null).
   const pillIconsExpandedWidth = computePillIconsWidth();
@@ -507,22 +356,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             />
           ) : (
             <>
-              <Button
-                title=""
-                variant="ghost"
-                size="small"
-                testID="assistant-toggle"
-                accessibilityLabel="Assistant"
-                accessibilityState={{ selected: assistantEnabled, busy: assistantTransitioning }}
-                onPress={handleAssistantPress}
-                active={assistantEnabled}
-                loading={assistantTransitioning}
-                style={styles.assistantButton}
-                icon={<GodIcon
-                  size={16}
-                  color={assistantEnabled ? colors.primary : colors.textDisabled}
-                />}
-              />
               <TextInput
                 ref={inputRef}
                 testID="chat-input"
@@ -579,8 +412,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         supportsToolCalling={supportsToolCalling}
         enabledToolCount={enabledToolCount}
         onToolsPress={onToolsPress}
-        mcpToolCount={mcpToolCount}
-        onMcpPress={onMcpPress}
       />
       <CustomAlert
         visible={alertState.visible}
@@ -589,23 +420,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         buttons={alertState.buttons}
         onClose={() => setAlertState(hideAlert())}
       />
-      <AppSheet
-        visible={assistantGateOpen}
-        onClose={() => setAssistantGateOpen(false)}
-        title={assistantGate.title}
-        enableDynamicSizing
-      >
-        <View style={styles.assistantGateContent}>
-          <Text style={styles.assistantGateText}>{assistantGate.body}</Text>
-          <Button
-            title={assistantGate.action}
-            onPress={() => {
-              setAssistantGateOpen(false);
-              assistantGate.onPress?.();
-            }}
-          />
-        </View>
-      </AppSheet>
     </View>
   );
 };

@@ -10,7 +10,7 @@ describe('Home with a saved remote Text selection', () => {
         servers: [{
           id: 'gateway',
           name: 'Off Grid AI Gateway',
-          endpoint: 'http://192.168.1.50:7878',
+          endpoint: 'http://192.168.1.50:11434',
           providerType: 'openai-compatible',
           createdAt: '2026-09-12T00:00:00.000Z',
           mediaModels: { text: 'qwen/qwen3-8b' },

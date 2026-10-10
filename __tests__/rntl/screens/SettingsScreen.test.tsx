@@ -9,12 +9,7 @@
  */
 
 import React from 'react';
-import { Linking } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-// Import the SAME shared URL constants the screen uses, so the tap assertions ride on the
-// single source of truth (test-side DRY) rather than re-hardcoding the URL strings.
-import { FOLLOW_X_URL, SLACK_INVITE_URL } from '../../../src/utils/sharePrompt';
-import { SUPPORT_EMAIL } from '../../../src/utils/supportEmail';
+import { render, fireEvent } from '@testing-library/react-native';
 
 jest.mock('react-native-fs', () => ({
   getFSInfo: jest.fn(async () => ({ freeSpace: 8 * 1024 * 1024 * 1024 })),
@@ -102,13 +97,6 @@ describe('SettingsScreen', () => {
     mockProState.proBannerDismissed = false;
   });
 
-  it('shows the Pro upsell banner when Pro is not active and not dismissed', () => {
-    const { getByText } = render(<SettingsScreen />);
-    expect(
-      getByText('Your private AI stays current across your devices with live sync.'),
-    ).toBeTruthy();
-  });
-
   it('hides the Pro upsell banner once Pro is active', () => {
     mockProState.hasRegisteredPro = true;
     const { queryByText } = render(<SettingsScreen />);
@@ -144,7 +132,7 @@ describe('SettingsScreen', () => {
   it('renders navigation item descriptions', () => {
     const { getByText } = render(<SettingsScreen />);
     expect(getByText('System prompt, generation, and performance')).toBeTruthy();
-    expect(getByText('Connect to Off Grid AI Desktop, Ollama, LM Studio, and more')).toBeTruthy();
+    expect(getByText('Connect to Ollama, LM Studio, and more')).toBeTruthy();
     expect(getByText('Passphrase and app lock')).toBeTruthy();
     expect(getByText('Hardware and compatibility')).toBeTruthy();
     expect(getByText('Models and data usage')).toBeTruthy();
@@ -196,44 +184,6 @@ describe('SettingsScreen', () => {
     const { getByText } = render(<SettingsScreen />);
     expect(getByText('About')).toBeTruthy();
     expect(getByText(/Version/)).toBeTruthy();
-  });
-
-  it('renders the "Stay in the loop" card with the Follow-on-X and Join-Slack items', () => {
-    const { getByText, getByTestId } = render(<SettingsScreen />);
-    expect(getByText('Stay in the loop')).toBeTruthy();
-    expect(getByText('Follow @alichherawalla on X')).toBeTruthy();
-    // The two affordances are present and tappable.
-    expect(getByTestId('follow-on-x')).toBeTruthy();
-    expect(getByTestId('join-slack')).toBeTruthy();
-  });
-
-  it('opens the X profile URL when Follow-on-X is tapped', () => {
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
-    const { getByTestId } = render(<SettingsScreen />);
-    fireEvent.press(getByTestId('follow-on-x'));
-    // Terminal artifact of a link tap: the OS is handed the exact X profile URL (the shared constant).
-    expect(openURL).toHaveBeenCalledWith(FOLLOW_X_URL);
-    openURL.mockRestore();
-  });
-
-  it('opens the Slack invite URL when Join-Slack is tapped', () => {
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
-    const { getByTestId } = render(<SettingsScreen />);
-    fireEvent.press(getByTestId('join-slack'));
-    expect(openURL).toHaveBeenCalledWith(SLACK_INVITE_URL);
-    openURL.mockRestore();
-  });
-
-  it('sends feedback to the shared support address', async () => {
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
-    const { getByText } = render(<SettingsScreen />);
-
-    fireEvent.press(getByText('Send Feedback'));
-
-    await waitFor(() => {
-      expect(openURL.mock.calls[0]?.[0]).toContain(`mailto:${SUPPORT_EMAIL}?`);
-    });
-    openURL.mockRestore();
   });
 
   it('no longer renders the removed Pro Tools row', () => {

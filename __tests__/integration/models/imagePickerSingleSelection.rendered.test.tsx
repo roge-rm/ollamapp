@@ -24,7 +24,7 @@ describe('image model picker selection', () => {
     useRemoteServerStore.getState().clearAllServers();
     useRemoteServerStore.getState().addServer({
       name: 'Studio Mac',
-      endpoint: 'http://192.168.1.50:7878', // NOSONAR - private LAN fixture
+      endpoint: 'http://192.168.1.50:11434', // NOSONAR - private LAN fixture
       providerType: 'openai-compatible',
       mediaModels: { image: 'remote-image' },
       modelCatalog: { image: [{ id: 'remote-image', name: 'Remote Dreamshaper' }] },

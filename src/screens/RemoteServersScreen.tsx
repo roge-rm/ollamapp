@@ -11,7 +11,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Linking,
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,11 +31,8 @@ import {
   initialAlertState,
   showAlert,
 } from '../components/CustomAlert';
-import { OFF_GRID_DESKTOP_URL } from '../constants';
-import { withUtm } from '../utils/utm';
 import { createStyles } from './RemoteServersScreen.styles';
 
-const DESKTOP_URL = withUtm(OFF_GRID_DESKTOP_URL, 'remote-servers');
 const SCAN_KINDS: Array<{ kind: DiscoverableServerKind; label: string; port: number }> = [
   { kind: 'gateway', label: 'Off Grid AI Desktop', port: 7878 },
   { kind: 'ollama', label: 'Ollama', port: 11434 },
@@ -180,10 +176,6 @@ export const RemoteServersScreen: React.FC = () => {
     [activeServerId, setActiveServerId],
   );
 
-  const openDesktopUrl = useCallback(() => {
-    Linking.openURL(DESKTOP_URL).catch(() => {});
-  }, []);
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader title="Remote Servers" onBack={() => navigation.goBack()} />
@@ -285,20 +277,8 @@ export const RemoteServersScreen: React.FC = () => {
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No servers yet</Text>
             <Text style={styles.emptyText}>
-              Off Grid AI Desktop serves your Mac&apos;s models to this phone.
-              Ollama and LM Studio work the same way.
+              Ollama and LM Studio serve your computer&apos;s models to this phone.
             </Text>
-            <TouchableOpacity
-              style={styles.desktopLink}
-              onPress={openDesktopUrl}
-              accessibilityRole="link"
-              accessibilityLabel="Get Off Grid AI Desktop"
-            >
-              <Icon name="monitor" size={14} color={theme.colors.primary} />
-              <Text style={styles.desktopLinkText}>
-                Get Off Grid AI Desktop
-              </Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Button,
@@ -12,13 +12,11 @@ import { AnimatedEntry } from '../../components/AnimatedEntry';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { useFocusTrigger } from '../../hooks/useFocusTrigger';
 import Icon from 'react-native-vector-icons/Feather';
-import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useThemedStyles, useTheme } from '../../theme';
 import { createStyles } from './styles';
 import { useHomeScreen, HomeScreenNavigationProp } from './hooks/useHomeScreen';
 import { RecentConversations } from './components/RecentConversations';
 import { LoadingOverlay } from './components/LoadingOverlay';
-import { DesktopPromoCard } from './components/DesktopPromoCard';
 import { ModelsSummaryRow } from '../../components/models/ModelsSummaryRow';
 import {
   ModelsManagerSheet,
@@ -29,10 +27,7 @@ import { VoiceModelsSheet } from '../../components/models/VoiceModelsSheet';
 import { useWhisperStore } from '../../stores/whisperStore';
 import { WHISPER_MODELS } from '../../services';
 import { useUiModeStore } from '../../stores/uiModeStore';
-import { SLOTS, useSlot } from '../../bootstrap/slotRegistry';
-import { useOpenSync } from '../../hooks/useOpenSync';
 import { useActiveRemoteModelLabels } from '../../hooks/useActiveRemoteModelLabels';
-import { openSupportEmail } from '../../utils/supportEmail';
 
 type HomeScreenProps = {
   navigation: HomeScreenNavigationProp;
@@ -58,9 +53,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const focusTrigger = useFocusTrigger();
   const { colors, isDark } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const SyncHomeCard = useSlot(SLOTS.homeSyncCard);
-  const HomeNotificationsButton = useSlot(SLOTS.homeNotificationsButton);
-  const { isSyncUnlocked, openSync, openSyncNotifications } = useOpenSync();
 
   const {
     pickerType,
@@ -181,21 +173,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 accessible={false}
                 testID="home-app-logo"
               />
-              <Text style={styles.title}>Off Grid AI</Text>
-            </View>
-            <View style={styles.headerActions}>
-              {HomeNotificationsButton ? (
-                <HomeNotificationsButton onOpen={openSyncNotifications} />
-              ) : null}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('ProDetail')}
-                hitSlop={8}
-                style={styles.crownButton}
-                accessibilityRole="button"
-                accessibilityLabel="Open Off Grid AI Pro"
-              >
-                <IconMC name="crown" size={16} color={colors.primary} />
-              </TouchableOpacity>
+              <Text style={styles.title}>Ollamapp</Text>
             </View>
           </View>
 
@@ -253,20 +231,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </Card>
           )}
 
-          {SyncHomeCard ? (
-            <AnimatedEntry index={2} staggerMs={50} trigger={focusTrigger}>
-              <SyncHomeCard
-                isUnlocked={isSyncUnlocked}
-                onOpen={openSync}
-                onOpenClipboard={() =>
-                  isSyncUnlocked
-                    ? navigation.navigate('Clipboard' as never)
-                    : navigation.navigate('ProDetail')
-                }
-              />
-            </AnimatedEntry>
-          ) : null}
-
           {/* Recent Conversations */}
           {recentConversations.length > 0 && (
             <AnimatedEntry index={3} staggerMs={50} trigger={focusTrigger}>
@@ -297,35 +261,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
             <Icon name="chevron-right" size={16} color={colors.textMuted} />
           </AnimatedPressable>
-
-          <AnimatedEntry index={5} staggerMs={50} trigger={focusTrigger}>
-            <Card style={styles.supportCard} testID="home-support-card">
-              <View style={styles.supportHeader}>
-                <Icon name="message-square" size={18} color={colors.primary} />
-                <Text style={styles.supportTitle}>
-                  What should we build next?
-                </Text>
-              </View>
-              <Text style={styles.supportDescription}>
-                Tell us what you would like to see in Off Grid AI Mobile.
-              </Text>
-              <Button
-                title="Write to us"
-                variant="outline"
-                size="small"
-                onPress={() =>
-                  openSupportEmail({
-                    subject: '[Idea] Off Grid AI Mobile',
-                    body: 'Hi,\n\nI would like to see this in Off Grid AI Mobile:\n\n',
-                  })
-                }
-                testID="home-support-email"
-              />
-            </Card>
-          </AnimatedEntry>
-
-          {/* Off Grid AI Desktop — live announcement; owns its own copy/dismiss state. */}
-          <DesktopPromoCard />
 
           {/* Model Stats row removed — the per-type counts now live in the Models
               card above, and the chat count sits next to "See all". */}

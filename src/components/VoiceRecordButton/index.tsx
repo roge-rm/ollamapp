@@ -128,7 +128,7 @@ const MicDeniedButton: React.FC<{ asSendButton: boolean }> = ({ asSendButton }) 
           setAlertState(
             showAlert(
               'Microphone Access Is Off',
-              'Turn on microphone access for Off Grid AI in Settings to talk instead of type.',
+              'Turn on microphone access for Ollamapp in Settings to talk instead of type.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Open Settings', onPress: openSettings },

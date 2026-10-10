@@ -81,7 +81,7 @@ describe('remoteServerStore', () => {
         {
           id: 'desktop',
           name: 'Studio Mac',
-          endpoint: 'http://192.168.1.50:7878', // NOSONAR - private LAN test fixture
+          endpoint: 'http://192.168.1.50:11434', // NOSONAR - private LAN test fixture
           providerType: 'openai-compatible',
           createdAt: 'now',
           mediaModels: {

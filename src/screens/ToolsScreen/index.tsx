@@ -3,28 +3,19 @@ import { View, Text, Switch, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme, useThemedStyles } from '../../theme';
 import { FONTS, TYPOGRAPHY, SPACING } from '../../constants';
 import { AVAILABLE_TOOLS } from '../../services/tools';
 import { useAppStore } from '../../stores';
-import { useOpenProTools } from '../../hooks/useOpenProTools';
 import type { ThemeColors, ThemeShadows } from '../../theme';
 
 const TOOL_WARNING_COLOR = '#F59E0B';
 
-/**
- * Full-page tool picker (replaces the old bottom-sheet drawer). Lists the free
- * core-registry tools as toggles. Pro tools (email/calendar) and MCP servers live
- * on the dedicated Pro Tools destination, reached via the row pinned to the top of
- * the list — for everyone. Free users land on the Pro upsell, pro users go
- * straight to the Pro Tools screen (see useOpenProTools).
- */
+/** Full-page tool picker. Lists the built-in tools as toggles. */
 export const ToolsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const openProTools = useOpenProTools();
 
   const enabledTools = useAppStore(st => st.settings.enabledTools) || [];
   const updateSettings = useAppStore(st => st.updateSettings);
@@ -55,23 +46,6 @@ export const ToolsScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Pro Tools always sits on top of the listing. */}
-        <TouchableOpacity
-          style={styles.proToolsButton}
-          onPress={openProTools}
-          activeOpacity={0.75}
-          testID="tools-pro-tools"
-        >
-          <View style={styles.proToolsIcon}>
-            <IconMC name="crown" size={20} color={colors.primary} />
-          </View>
-          <View style={styles.toolInfo}>
-            <Text style={styles.toolName}>Pro Tools</Text>
-            <Text style={styles.toolDescription}>Email, calendar and MCP servers</Text>
-          </View>
-          <Icon name="chevron-right" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-
         {showHint && (
           <View style={[styles.hintBanner, { backgroundColor: colors.surface }]}>
             <Icon name="alert-circle" size={16} color={TOOL_WARNING_COLOR} style={styles.hintIcon} />
@@ -150,22 +124,6 @@ const createStyles = (colors: ThemeColors, _shadows: ThemeShadows) => ({
   contentContainer: {
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xl,
-  },
-  proToolsButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  proToolsIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${colors.primary}20`,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginRight: 12,
   },
   toolRow: {
     flexDirection: 'row' as const,

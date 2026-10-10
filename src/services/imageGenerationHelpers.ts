@@ -2,13 +2,11 @@ import { Platform } from 'react-native';
 import {
   isRuntimeOnlyMessage,
   PROMPT_ENHANCEMENT_REASONING_LABEL,
-} from '@offgrid/sync';
+} from '@offgrid/chat';
 import { useAppStore, useChatStore } from '../stores';
 import { GeneratedImage, GenerationMeta, Message } from '../types';
 import { parseModelOutput } from '../utils/messageContent';
-import { maybeScheduleSharePrompt } from '../utils/sharePrompt';
 import { reportModelFailure } from './modelFailureHandler';
-import { checkProPromptForImage } from './proPrompt';
 import type { ImageGenerationState } from './imageGenerationTypes';
 
 export function imagePhaseTransitionLog(
@@ -41,16 +39,7 @@ export function reportEnhancementSkipped(reason: string): void {
 }
 
 export function scheduleImageSharePrompt(): void {
-  const appStore = useAppStore.getState();
-  const count = appStore.incrementImageGenerationCount();
-  const delayMs = 2000;
-  maybeScheduleSharePrompt({
-    variant: 'image',
-    count,
-    hasEngaged: appStore.hasEngagedSharePrompt,
-    delayMs,
-  });
-  checkProPromptForImage(delayMs);
+  useAppStore.getState().incrementImageGenerationCount();
 }
 
 interface ActiveImageModel {

@@ -1,7 +1,9 @@
-import { callHook, HOOKS } from '../../bootstrap/hookRegistry';
-import type { KnowledgeDocumentDescriptor } from '@offgrid/sync';
-
-export interface KnowledgeDocumentSnapshot extends KnowledgeDocumentDescriptor {
+export interface KnowledgeDocumentSnapshot {
+  syncId: string;
+  projectId: string;
+  name: string;
+  createdAt: string;
+  enabled: boolean;
   filePath: string;
   fileSize: number;
 }
@@ -11,12 +13,7 @@ export type KnowledgeDocumentMutation =
   | { kind: 'enabled'; syncId: string; enabled: boolean }
   | { kind: 'deleted'; syncId: string };
 
+/** Knowledge base changes would go to paired devices. This build has no sync, so they go nowhere. */
 export function emitKnowledgeDocumentMutation(
-  mutation: KnowledgeDocumentMutation,
-): void {
-  try {
-    callHook(HOOKS.syncKnowledgeDocumentMutation, mutation);
-  } catch {
-    // Sync is additive. A Pro integration failure must not roll back local RAG.
-  }
-}
+  _mutation: KnowledgeDocumentMutation,
+): void {}

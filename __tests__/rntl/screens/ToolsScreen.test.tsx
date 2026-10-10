@@ -3,8 +3,7 @@
  *
  * The tools picker is a full page (it replaced the old bottom-sheet drawer). Tests:
  * - Renders the page header and all free tool rows
- * - Pro Tools row is pinned to the top of the listing and is shown to everyone
- * - Pro Tools routing: free -> ProDetail upsell, pro -> the Pro Tools screen
+ * - There is no Pro Tools row
  * - Tool toggles flow through the core settings store
  * - Back button navigates back
  */
@@ -13,9 +12,6 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ToolsScreen } from '../../../src/screens/ToolsScreen';
 import { AVAILABLE_TOOLS } from '../../../src/services/tools/registry';
-import { registerScreen, _clearScreensForTesting } from '../../../src/navigation/screenRegistry';
-import { PRO_TOOLS_SCREEN } from '../../../src/hooks/useIsProActive';
-import { useAppStore } from '../../../src/stores/appStore';
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -68,17 +64,7 @@ jest.mock('../../../src/theme', () => {
 describe('ToolsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    _clearScreensForTesting();
     mockEnabledTools = ['web_search', 'calculator'];
-    useAppStore.setState({
-      hasRegisteredPro: false,
-      hasSavedProCredential: false,
-      isProActive: false,
-      proDeviceAdmission: 'unknown',
-    });
-  });
-  afterEach(() => {
-    _clearScreensForTesting();
   });
 
   it('renders the page header and every free tool row', () => {
@@ -89,29 +75,10 @@ describe('ToolsScreen', () => {
     }
   });
 
-  it('shows the Pro Tools row to everyone (even free users)', () => {
-    const { getByTestId, getByText } = render(<ToolsScreen />);
-    expect(getByTestId('tools-pro-tools')).toBeTruthy();
-    expect(getByText('Pro Tools')).toBeTruthy();
-  });
-
-  it('routes a free user to the Pro upsell when Pro Tools is pressed', () => {
-    const { getByTestId } = render(<ToolsScreen />);
-    fireEvent.press(getByTestId('tools-pro-tools'));
-    expect(mockNavigate).toHaveBeenCalledWith('ProDetail');
-  });
-
-  it('routes a pro user straight to the Pro Tools screen', () => {
-    useAppStore.setState({
-      hasRegisteredPro: true,
-      hasSavedProCredential: true,
-      isProActive: true,
-      proDeviceAdmission: 'active',
-    });
-    registerScreen({ name: PRO_TOOLS_SCREEN, component: () => null });
-    const { getByTestId } = render(<ToolsScreen />);
-    fireEvent.press(getByTestId('tools-pro-tools'));
-    expect(mockNavigate).toHaveBeenCalledWith(PRO_TOOLS_SCREEN);
+  it('has no Pro Tools row', () => {
+    const { queryByTestId, queryByText } = render(<ToolsScreen />);
+    expect(queryByTestId('tools-pro-tools')).toBeNull();
+    expect(queryByText('Pro Tools')).toBeNull();
   });
 
   it('toggles a tool through the core settings store', () => {

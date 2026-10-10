@@ -31,7 +31,7 @@ import {
 } from './components/ToolMessages';
 import type { ChatMessageProps } from './types';
 import type { Message } from '../../types';
-import { isSupportingChatContext } from '@offgrid/sync';
+import { isSupportingChatContext } from '@offgrid/chat';
 
 type MetaRowProps = {
   message: Message;

@@ -1,4 +1,4 @@
-import type { DevicePlatform, TransferredModelManifest } from '@offgrid/sync';
+import type { DevicePlatform, TransferredModelManifest } from '@offgrid/chat';
 import type { ONNXImageModel } from '../../types';
 
 const IMAGE_TRANSFER_ARCHIVE_SUFFIX = '.offgrid-image.zip';
