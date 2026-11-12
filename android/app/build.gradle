@@ -93,8 +93,15 @@ android {
         applicationId "com.rm.ollamapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "0.2.2"
+        versionCode 5
+        versionName "0.3.0"
+    }
+    // Release signing from ../../Keys/ollamapp-keystore.properties (outside the repo).
+    // Without that file, e.g. on a fresh clone, the release build falls back to the debug key.
+    def signingPropertiesFile = rootProject.file("../../Keys/ollamapp-keystore.properties")
+    def signingProperties = new Properties()
+    if (signingPropertiesFile.exists()) {
+        signingPropertiesFile.withInputStream { signingProperties.load(it) }
     }
     signingConfigs {
         debug {
@@ -104,11 +111,11 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('OFFGRID_UPLOAD_STORE_FILE')) {
-                storeFile file(OFFGRID_UPLOAD_STORE_FILE)
-                storePassword OFFGRID_UPLOAD_STORE_PASSWORD
-                keyAlias OFFGRID_UPLOAD_KEY_ALIAS
-                keyPassword OFFGRID_UPLOAD_KEY_PASSWORD
+            if (signingProperties['storeFile']) {
+                storeFile file(signingProperties['storeFile'])
+                storePassword signingProperties['storePassword']
+                keyAlias signingProperties['keyAlias']
+                keyPassword signingProperties['keyPassword']
             }
         }
     }
