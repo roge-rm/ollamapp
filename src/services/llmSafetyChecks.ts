@@ -4,6 +4,7 @@ import RNFS from 'react-native-fs';
 import { statFile } from '../utils/fileStat';
 import logger from '../utils/logger';
 import { OverridableMemoryError } from '../utils/modelLoadErrors';
+import { fileExceedsBudget } from './memoryBudget';
 
 /**
  * GGUF magic number — first 4 bytes of every valid GGUF file.
@@ -126,6 +127,10 @@ export interface MemoryCheckArgs {
   contextLength: number;
   getAvailableMemory: () => Promise<{ available: number; total: number }>;
   quantizedCache?: boolean;
+  /** Mapped weights page in from the file and are not charged in full against free RAM. */
+  weightsMapped?: boolean;
+  /** A vision projector loaded beside mapped weights: it is copied into memory. */
+  projectorFileSize?: number;
 }
 
 export async function checkMemoryForModel(
@@ -134,16 +139,18 @@ export async function checkMemoryForModel(
   safe: boolean;
   reason?: string;
   estimatedMB: number;
+  /** What the verdict compares against: the estimate plus the OS/app headroom. Copy must quote this. */
+  requiredMB: number;
   availableMB: number;
 }> {
-  const { modelFileSize, contextLength, getAvailableMemory, quantizedCache } =
+  const { modelFileSize, contextLength, getAvailableMemory, quantizedCache, weightsMapped, projectorFileSize = 0 } =
     args;
   try {
     const { available, total } = await getAvailableMemory();
     const availableMB = available / (1024 * 1024);
     const totalMB = total / (1024 * 1024);
     // Model weights in RAM (~1x file size for mmap, up to 1.2x without)
-    const modelMB = (modelFileSize * 1.2) / (1024 * 1024);
+    const modelMB = (modelFileSize * (weightsMapped ? 1 : 1.2)) / (1024 * 1024);
     // KV cache estimate: a fraction of the model weights per 1024 tokens (see above).
     const kvFractionPer1k = quantizedCache
       ? KV_FRACTION_PER_1K_QUANT
@@ -152,7 +159,12 @@ export async function checkMemoryForModel(
     const estimatedMB = modelMB + kvCacheMB;
     // Require at least 200MB headroom after model load for OS and app
     const MIN_HEADROOM_MB = 200;
-    const safe = availableMB > estimatedMB + MIN_HEADROOM_MB;
+    // Mapped weights page in from the file: the shared fit rule bounds them against
+    // total RAM, and only the KV cache and headroom must fit in what is free.
+    const projectorMB = weightsMapped ? projectorFileSize / (1024 * 1024) : 0;
+    const weightsFit = !weightsMapped || !fileExceedsBudget(modelFileSize + projectorFileSize, total / 1024 ** 3);
+    const requiredMB = weightsMapped && weightsFit ? kvCacheMB + projectorMB + MIN_HEADROOM_MB : estimatedMB + projectorMB + MIN_HEADROOM_MB;
+    const safe = weightsFit && availableMB > requiredMB;
     // [MEM-SM] the pre-load fit decision — kept (surfaces the exact "it needs ~X but only Y" call
     // on-device AND in tests via DEBUG_LOGS=1). This is the gate the qwythos refusal came from.
     logger.log(
@@ -160,27 +172,28 @@ export async function checkMemoryForModel(
         modelMB,
       )} kvMB=${Math.round(kvCacheMB)} estMB=${Math.round(
         estimatedMB,
-      )} availMB=${Math.round(availableMB)} ctx=${contextLength} safe=${safe}`,
+      )} availMB=${Math.round(availableMB)} ctx=${contextLength} mapped=${!!weightsMapped} safe=${safe}`,
     );
     if (!safe) {
       return {
         safe: false,
         reason: `Not enough memory: model needs ~${Math.round(
-          estimatedMB,
+          requiredMB,
         )}MB but only ${Math.round(
           availableMB,
         )}MB available (device total: ${Math.round(
           totalMB,
         )}MB). Try closing other apps or using a smaller model.`,
         estimatedMB,
+        requiredMB,
         availableMB,
       };
     }
-    return { safe: true, estimatedMB, availableMB };
+    return { safe: true, estimatedMB, requiredMB, availableMB };
   } catch (e: any) {
     // If we can't check memory, proceed anyway but log a warning
     logger.warn('[LLM] Could not check available memory:', e?.message || e);
-    return { safe: true, estimatedMB: 0, availableMB: 0 };
+    return { safe: true, estimatedMB: 0, requiredMB: 0, availableMB: 0 };
   }
 }
 
@@ -189,8 +202,12 @@ export async function resolveSafeContext(args: {
   fileSize: number;
   requestedCtx: number;
   quantizedCache: boolean;
+  weightsMapped?: boolean;
+  projectorFileSize?: number;
   override?: boolean;
   getAvailableMemory: () => Promise<{ available: number; total: number }>;
+  /** The check the caller already ran. Reused so the copy quotes the snapshot that failed. */
+  memCheck?: Awaited<ReturnType<typeof checkMemoryForModel>>;
 }): Promise<{
   ctxLen: number;
   memCheck: Awaited<ReturnType<typeof checkMemoryForModel>>;
@@ -202,11 +219,13 @@ export async function resolveSafeContext(args: {
     override = false,
     getAvailableMemory: getMem,
   } = args;
-  const memCheck = await checkMemoryForModel({
+  const memCheck = args.memCheck ?? await checkMemoryForModel({
     modelFileSize: fileSize,
     contextLength: requestedCtx,
     getAvailableMemory: getMem,
     quantizedCache,
+    weightsMapped: args.weightsMapped,
+    projectorFileSize: args.projectorFileSize,
   });
   if (!memCheck.safe && !override) {
     throw new OverridableMemoryError(

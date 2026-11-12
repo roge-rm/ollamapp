@@ -72,6 +72,21 @@ describe('startModelDownload', () => {
     expect(mockStore.setStatus).toHaveBeenCalledWith(`queued:${KEY}`, 'failed', { message: 'boom' });
   });
 
+  it('a phone without room refuses before the transfer and says why, with the disk_full reason kept', async () => {
+    const err = Object.assign(
+      new Error('Not enough space. This needs 1.4 GB and your phone has 200 MB free. Free up space in Settings → Storage, then try again.'),
+      { code: 'disk_full' },
+    );
+    mockDownloadModelBackground.mockRejectedValue(err);
+    const onError = jest.fn();
+    await startModelDownload(MODEL_ID, FILE, { onError });
+    expect(onError).toHaveBeenCalledWith(err);
+    expect(mockStore.setStatus).toHaveBeenCalledWith(`queued:${KEY}`, 'failed', {
+      message: err.message,
+      code: 'disk_full',
+    });
+  });
+
   it('swallows a cancellation of a still-queued start and removes the placeholder row', async () => {
     // Cancelling a "Queued" row rejects the awaited start with `.cancelled` — it is not
     // an error, so it must NOT surface onError, and the placeholder row must be removed.

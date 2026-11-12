@@ -95,6 +95,36 @@ describe('shouldDisableMmap — android repackable quant branch', () => {
   });
 });
 
+describe('buildModelParams — mmap from the GGUF header quant type', () => {
+  const origOS = Platform.OS;
+  afterEach(() => { (Platform as any).OS = origOS; });
+  const mmap = (fileType: number | null) => (buildModelParams('/models/m.gguf', {}, { fileType }).baseParams as any).use_mmap;
+
+  it('turns mmap off on android for a quant llama.cpp repacks (Q4_0, Q4_K_M, Q8_0)', () => {
+    (Platform as any).OS = 'android';
+    expect([mmap(2), mmap(15), mmap(7)]).toEqual([false, false, false]);
+  });
+
+  it('keeps mmap on android for a quant that is not repacked, or an unread header', () => {
+    (Platform as any).OS = 'android';
+    expect([mmap(1), mmap(null)]).toEqual([true, true]);
+  });
+
+  it('keeps mmap on iOS', () => {
+    (Platform as any).OS = 'ios';
+    expect(mmap(2)).toBe(true);
+  });
+
+  it('low-memory mode maps on android even for a repackable quant', () => {
+    (Platform as any).OS = 'android';
+    const params = buildModelParams('/models/m.gguf', {}, { fileType: 15, lowMemory: true });
+    expect((params.baseParams as any).use_mmap).toBe(true);
+    expect((params.baseParams as any).no_extra_bufts).toBe(true);
+    expect(params.copiesWeights).toBe(false);
+    expect(params.lowMemory).toBe(true);
+  });
+});
+
 describe('buildModelParams — OpenCL backend branch', () => {
   it('forces flash off, omits cache_type params, and coerces requested cache to f16', () => {
     const params = buildModelParams('/model.gguf', {

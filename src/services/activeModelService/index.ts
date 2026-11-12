@@ -5,6 +5,7 @@ import { getActiveEngineService } from '../engines';
 import { localDreamGeneratorService as onnxImageGeneratorService } from '../localDreamGenerator';
 import { hardwareService } from '../hardware';
 import { modelResidencyManager } from '../modelResidency';
+import { startsInLowMemory } from '../lowMemoryLoads';
 import { OverridableMemoryError, ImageModelIncompleteError } from '../modelLoadErrors';
 import { validateImageModelDir } from '../../utils/imageModelIntegrity';
 import { remoteServerManager } from '../remoteServerManager';
@@ -28,6 +29,7 @@ import {
   checkMemoryForDualModel as _checkMemoryForDualModel,
   getCurrentlyLoadedMemoryGB as _getCurrentlyLoadedMemoryGB,
   estimateTextModelMemoryMB,
+  textPrefersCopy,
 } from './memory';
 import { doLoadTextModel, doLoadImageModel, checkImageModelCanLoad } from './loaders';
 import {
@@ -175,12 +177,15 @@ class ActiveModelService {
     // LiteRT weights + KV are dirty/accelerator memory → gated on REAL free RAM (mmap GGUF
     // stays clean/physical-cap). Derived once so makeRoomFor and register agree.
     const textIsDirty = model.engine === 'litert';
+    const prefersCopy = await textPrefersCopy(model);
+    const textSpec = {
+      key: 'text', type: 'text' as const, modelId, sizeMB: textSizeMB, dirtyMemory: textIsDirty, prefersCopy,
+      // A model that died loading as a copy loads mapped from the start (llm.ts): no room is made for a copy.
+      startsMapped: prefersCopy && await startsInLowMemory(model.filePath),
+    };
     // Residency manager is authoritative: evict other generation models to fit the budget.
     // Evicted unloads are the non-locking internal variants (we hold the lock), so no deadlock.
-    const room = await modelResidencyManager.makeRoomFor(
-      { key: 'text', type: 'text', modelId, sizeMB: textSizeMB, dirtyMemory: textIsDirty },
-      { override: opts?.override },
-    );
+    const room = await modelResidencyManager.makeRoomFor(textSpec, { override: opts?.override });
     // First refusal is OVERRIDABLE ("Load Anyway"); a refusal UNDER override is a hard limit → plain Error.
     if (!room.fits) {
       throw opts?.override
@@ -200,7 +205,7 @@ class ActiveModelService {
         this.setLoadedText(id);
         useAppStore.getState().setTextModelEvicted(false); // loaded → clear any prior eviction
         modelResidencyManager.register(
-          { key: 'text', type: 'text', modelId, sizeMB: textSizeMB, dirtyMemory: textIsDirty },
+          textSpec,
           () => this.doUnloadTextModelLocked(true), // eviction keeps the selection
         );
       },

@@ -74,6 +74,19 @@ export function deriveEngineCapabilities(i: CapabilityInputs): EngineCapabilitie
   };
 }
 
+/** Unload every text engine except `keep`: the engine about to load swaps its own model, checking
+ *  the new one fits before it lets the current one go. */
+export async function unloadOtherTextEngines(keep: { unloadModel: () => Promise<void> }): Promise<void> {
+  for (const engine of TEXT_ENGINES) {
+    if (engine === keep) continue;
+    try {
+      await engine.unloadModel();
+    } catch (e) {
+      logger.warn('[engines] text engine unload during switch failed, continuing:', e);
+    }
+  }
+}
+
 /**
  * Unload every text engine (an idle engine is a safe no-op). Used on a model switch so a
  * cross-engine swap (LiteRT <-> llama) can't leave the previous model resident, without the
@@ -160,6 +173,13 @@ export function localModelAcceptsImages(model: DownloadedModel | null | undefine
 export function backendFallbackNotice(model: { engine?: string } | null | undefined): string | null {
   if (!model || model.engine === 'litert') return null;
   return llmService.getBackendFallbackNotice();
+}
+
+/** The notice when a just-loaded chat model runs in low-memory mode (mapped, because a copy would
+ *  not fit in free RAM). Null = loaded at full speed. */
+export function lowMemoryNotice(model: { engine?: string } | null | undefined): string | null {
+  if (!model || model.engine === 'litert' || !llmService.isLowMemoryMode()) return null;
+  return 'Running in low-memory mode. Close other apps for full speed.';
 }
 
 /**

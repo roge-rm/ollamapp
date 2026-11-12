@@ -45,7 +45,7 @@ export function resetDeviceMemory(): void {
 const MB = 1 / 1024; // GB per MB, for readable specs
 /** Register a resident model directly (as if already loaded), with a dumb unload spy. */
 export function makeResident(
-  spec: { key: string; type: any; modelId?: string; sizeMB: number; dirtyMemory?: boolean; canEvict?: () => boolean },
+  spec: { key: string; type: any; modelId?: string; sizeMB: number; dirtyMemory?: boolean; prefersCopy?: boolean; startsMapped?: boolean; canEvict?: () => boolean },
 ): jest.Mock {
   const unload = jest.fn().mockResolvedValue(undefined);
   modelResidencyManager.register(spec, unload, 1);

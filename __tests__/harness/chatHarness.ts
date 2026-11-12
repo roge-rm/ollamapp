@@ -64,6 +64,8 @@ export interface ChatHarnessOptions {
    *  detection. Omit for the reasoning-capable default; pass a marker-free template (Mistral's tool-use
    *  template) to model a model that does NOT support thinking so the Thinking toggle stays hidden. */
   chatTemplate?: string;
+  /** GGUF header fields returned by the native metadata reader (file_type, architecture). */
+  llamaModelInfo?: Record<string, unknown>;
 }
 
 export async function setupChatScreen(opts: ChatHarnessOptions) {
@@ -72,6 +74,7 @@ export async function setupChatScreen(opts: ChatHarnessOptions) {
   const boundary = installNativeBoundary({
     llama: opts.engine === 'llama',
     llamaChatTemplate: opts.chatTemplate,
+    llamaModelInfo: opts.llamaModelInfo,
     fs: true,
     ram,
     whisper: opts.whisper,

@@ -3,6 +3,7 @@ import { NativeModules, NativeEventEmitter, Platform, Alert } from 'react-native
 import { BackgroundDownloadInfo, BackgroundDownloadStatus } from '../types';
 import logger from '../utils/logger';
 import { serializeQueue, saveQueuedDownloads } from './queuedDownloadPersistence';
+import { assertFreeSpace } from './freeSpace';
 import type {
   DownloadParams,
   DownloadProgressEvent, DownloadCompleteEvent, DownloadErrorEvent,
@@ -131,6 +132,7 @@ class BackgroundDownloadService {
   /** The raw native start + BackgroundDownloadInfo mapping — no concurrency accounting.
    *  Sidecars call this directly; the counted path wraps it in slot bookkeeping. */
   private async startNativeDownload(params: DownloadParams): Promise<BackgroundDownloadInfo> {
+    await assertFreeSpace(Math.max(params.totalBytes ?? 0, params.combinedTotalBytes ?? 0));
     // Android 13+: prompt for notification permission so the foreground-service download
     // notification is visible (the download still runs as an FGS if denied). Best-effort.
     if (Platform.OS === 'android' && typeof DownloadManagerModule.requestNotificationPermission === 'function') {
