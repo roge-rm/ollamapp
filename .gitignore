@@ -101,3 +101,14 @@ docs/wire-captures/
 
 # Local agent instructions
 AGENTS.md
+CLAUDE.md
+GEMINI.md
+GROK.md
+CODEX.md
+.claude/
+.codex/
+.cursor/
+.cursorrules
+.grok/
+.github/copilot-instructions.md
+docs/NEXT_AGENT_BRIEF.md
