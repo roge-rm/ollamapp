@@ -501,9 +501,11 @@ export const useChatStore = create<ChatState>()(
     {
       name: 'local-llm-chat-storage',
       storage: chatStorage.storage,
-      onRehydrateStorage: () => () => chatStorage.markHydrated(),
+      onRehydrateStorage: chatStorage.onRehydrateStorage(),
       version: CHAT_STORAGE_VERSION,
       migrate: migratePersistedChatState,
+      // After a failed read the open chat stays open: a new chat is null, not the saved one.
+      merge: chatStorage.merge<ChatState>(undefined, ['activeConversationId']),
       partialize: (state): PersistedChatState => ({
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,
@@ -511,6 +513,7 @@ export const useChatStore = create<ChatState>()(
     },
   ),
 );
+chatStorage.attach(useChatStore);
 
 /** Wait until the latest persisted chat projection is durable. */
 export const waitForChatPersistence = (): Promise<void> =>

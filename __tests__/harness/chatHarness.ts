@@ -32,6 +32,32 @@ import { createDownloadedModel } from '../utils/factories';
 /** Shared route params the test's navigation mock reads (set by setupChatScreen). */
 export const routeHolder: { params: Record<string, unknown> } = { params: {} };
 
+/**
+ * BOUNDARY: the next read of `key` from AsyncStorage fails, once, as an unreadable store does on device;
+ * every other read, and every later read of `key`, goes to the stored data. Patches the AsyncStorage
+ * module of the CURRENT module graph, so call it after a module reset and before the stores are required.
+ * Resolves `failed` once the failing read has been answered.
+ */
+export function failFirstStorageRead(key: string): { failed: Promise<void> } {
+  const mod = require('@react-native-async-storage/async-storage');
+  const AsyncStorage = mod.default ?? mod;
+  const read = AsyncStorage.getItem.getMockImplementation() as (k: string) => Promise<string | null>;
+  let signal: () => void = () => {};
+  const failed = new Promise<void>(resolve => {
+    signal = resolve;
+  });
+  let pending = true;
+  AsyncStorage.getItem.mockImplementation((k: string) => {
+    if (pending && k === key) {
+      pending = false;
+      setTimeout(signal, 0);
+      return Promise.reject(new Error(`I/O error reading ${k}`));
+    }
+    return read(k);
+  });
+  return { failed };
+}
+
 export interface ChatHarnessOptions {
   engine: 'llama' | 'litert';
   /** 'ios' surfaces the Metal accelerator path for llama; default 'android'. */

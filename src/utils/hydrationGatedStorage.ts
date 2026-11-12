@@ -4,10 +4,39 @@ import {
   type PersistStorage,
   type StateStorage,
 } from 'zustand/middleware';
+import logger from './logger';
+import { mergeSessionIntoSaved } from './mergeSessionIntoSaved';
+
+/** Waits between read attempts after a failed load. The first write made meanwhile tries at once. */
+const LOAD_RETRY_DELAYS_MS = [250, 1000, 4000, 15000, 60000];
+
+/** The parts of a persisted zustand store the gate drives. */
+interface GatedStore {
+  getState(): object;
+  setState(partial: object): void;
+  persist: { rehydrate(): Promise<void> | void };
+}
+
+type Merge<T> = (persisted: unknown, current: T) => T;
 
 export interface HydrationGatedStorage<S> {
   storage: PersistStorage<S>;
   markHydrated(): void;
+  /**
+   * The persist `onRehydrateStorage` option. A good read opens the gate. A failed read keeps writes
+   * blocked, so the saved state is never replaced by launch defaults, and retries the read: at once on
+   * the first write, then with backoff. When a retry succeeds, the saved state is merged with what the
+   * user changed meanwhile (see `merge`) and that is saved.
+   */
+  onRehydrateStorage(): () => (state: unknown, error: unknown) => void;
+  /** Hand the created store to the gate, so a failed read can be retried on it. Call right after create. */
+  attach(store: GatedStore): void;
+  /**
+   * The persist `merge` option. Normally `savedOverCurrent` (default: saved over current). During a retry after a
+   * failed read, the session's changes are kept on top of the saved state; `keepCurrent` keys always
+   * follow the session.
+   */
+  merge<T extends object>(savedOverCurrent?: Merge<T>, keepCurrent?: readonly string[]): Merge<T>;
   isHydrated(): boolean;
   waitForWrites(): Promise<void>;
 }
@@ -18,7 +47,63 @@ export function createHydrationGatedStorage<S>(
   unchanged?: (previous: S, next: S) => boolean,
 ): HydrationGatedStorage<S> {
   let hydrated = false;
-  let lastWritten: S | undefined;
+  let attached: GatedStore | null = null;
+  let loadFailed = false;
+  let recovery: GatedStore | null = null;
+  // The store as it was when the read failed: what the user had before changing anything.
+  let atLaunch: object | null = null;
+  let recovering = false;
+  let retryCount = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let retrying = false;
+  let triedOnWrite = false;
+
+  const scheduleRetry = () => {
+    const delay = LOAD_RETRY_DELAYS_MS[retryCount++];
+    if (delay === undefined) {
+      logger.warn('[STORAGE-SM] saved state still unreadable; writes stay blocked to protect it');
+      return;
+    }
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      tryRecover().catch(() => {});
+    }, delay);
+  };
+
+  const startRecovery = () => {
+    if (hydrated || recovery || !attached) return;
+    recovery = attached;
+    atLaunch = recovery.getState();
+    logger.warn('[STORAGE-SM] saved state unreadable at launch; retrying the read');
+    scheduleRetry();
+  };
+
+  const tryRecover = async (): Promise<void> => {
+    if (hydrated || retrying || !recovery) return;
+    retrying = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
+    try {
+      recovering = true;
+      await recovery.persist.rehydrate();
+    } finally {
+      recovering = false;
+      retrying = false;
+    }
+    if (hydrated) {
+      const store = recovery;
+      recovery = null;
+      atLaunch = null;
+      logger.log('[STORAGE-SM] saved state read on retry; merged with this session and saving');
+      store.setState({});
+      return;
+    }
+    scheduleRetry();
+  };
+  // Last snapshot known to be stored: read at hydration or confirmed by a resolved write.
+  let lastSaved: S | undefined;
+  // Newest snapshot handed to storage whose write has not settled yet.
+  let lastIssued: { state: S } | undefined;
   const pendingWrites = new Set<Promise<void>>();
   const json = createJSONStorage<S>(() => base);
   if (!json) throw new Error('JSON storage is unavailable');
@@ -27,32 +112,76 @@ export function createHydrationGatedStorage<S>(
     storage: {
       getItem: async name => {
         const value = await json.getItem(name);
-        lastWritten = value?.state;
+        lastSaved = value?.state;
         return value;
       },
       setItem: (name, value) => {
-        if (!hydrated) return undefined;
-        if (
-          lastWritten !== undefined &&
-          unchanged?.(lastWritten, value.state)
-        ) {
+        if (!hydrated) {
+          if (recovery && !triedOnWrite) {
+            // Something new is waiting to be saved: read again now instead of at the next retry.
+            triedOnWrite = true;
+            tryRecover().catch(() => {});
+          }
           return undefined;
         }
-        lastWritten = value.state;
+        const previous = lastIssued ? lastIssued.state : lastSaved;
+        if (previous !== undefined && unchanged?.(previous, value.state)) {
+          return undefined;
+        }
+        const issued = { state: value.state };
+        lastIssued = issued;
+        const settle = () => {
+          if (lastIssued === issued) lastIssued = undefined;
+        };
         const result = json.setItem(name, value);
-        if (!result) return undefined;
-        const write = Promise.resolve(result).then(() => undefined);
+        if (!result) {
+          settle();
+          lastSaved = value.state;
+          return undefined;
+        }
+        const write = Promise.resolve(result).then(
+          () => {
+            settle();
+            lastSaved = value.state;
+          },
+          error => {
+            // Only a committed snapshot counts as saved, so the same content is written again later.
+            settle();
+            throw error;
+          },
+        );
         pendingWrites.add(write);
         return write.finally(() => pendingWrites.delete(write));
       },
       removeItem: name => {
         if (!hydrated) return undefined;
-        lastWritten = undefined;
+        lastIssued = undefined;
+        lastSaved = undefined;
         return json.removeItem(name);
       },
     },
     markHydrated: () => {
       hydrated = true;
+    },
+    onRehydrateStorage: () => () => (_state, error) => {
+      if (!error) {
+        hydrated = true;
+        return;
+      }
+      loadFailed = true;
+      startRecovery();
+    },
+    attach: store => {
+      attached = store;
+      if (loadFailed) startRecovery();
+    },
+    merge: <T extends object>(
+      savedOverCurrent: Merge<T> = (persisted, current) => ({ ...current, ...(persisted as Partial<T>) }),
+      keepCurrent: readonly string[] = [],
+    ): Merge<T> => (persisted, current) => {
+      const saved = savedOverCurrent(persisted, current);
+      if (!recovering || !atLaunch || !persisted) return saved;
+      return mergeSessionIntoSaved(saved, current, atLaunch as T, Object.keys(persisted), keepCurrent);
     },
     isHydrated: () => hydrated,
     waitForWrites: async () => {
