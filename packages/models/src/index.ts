@@ -3,3 +3,4 @@
 export * from './tools';
 export * from './reasoning';
 export * from './image';
+export * from './companion';

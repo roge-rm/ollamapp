@@ -85,6 +85,9 @@ describe('LLMService', () => {
       nBatch: 512,
       contextLength: 2048,
     };
+    (llmService as any).nativeWork.clear();
+    (llmService as any).releasingContext = false;
+    (llmService as any).contextUnusable = false;
   });
 
   // ========================================================================
@@ -2144,6 +2147,73 @@ describe('LLMService', () => {
         50
       );
       expect(result).toBe('Hello world');
+    });
+
+    it('never releases the context under a completion that was still being set up', async () => {
+      mockedRNFS.exists.mockResolvedValue(true);
+      const events: string[] = [];
+      let released = false;
+      const ctx = createMockLlamaContext({
+        completion: jest.fn().mockImplementation((_params, cb) => {
+          events.push(released ? 'completion on a freed context' : 'completion');
+          cb({ token: 'ok' });
+          return Promise.resolve({ timings: {} });
+        }),
+        release: jest.fn().mockImplementation(async () => {
+          released = true;
+          events.push('release');
+        }),
+      });
+      mockedInitLlama.mockResolvedValue(ctx as any);
+      await llmService.loadModel('/models/test.gguf');
+
+      // The router starts a capped completion and, before it reaches the engine, the model is unloaded.
+      const reply = llmService.generateWithMaxTokens(
+        [{ id: '1', role: 'user', content: 'route this', timestamp: 0 }],
+        16,
+      );
+      const unloaded = llmService.unloadModel();
+
+      await expect(reply).resolves.toBe('ok');
+      await unloaded;
+      expect(events).toEqual(['completion', 'release']);
+      await expect(
+        llmService.generateWithMaxTokens([{ id: '2', role: 'user', content: 'again', timestamp: 0 }], 16),
+      ).rejects.toThrow('No model loaded');
+    });
+
+    it('refuses a completion while released memory is still being reclaimed', async () => {
+      mockedRNFS.exists.mockResolvedValue(true);
+      const { hardwareService } = require('../../../src/services/hardware');
+      let released = false;
+      const completion = jest.fn().mockImplementation((_params, cb) => {
+        cb({ token: released ? 'ran on a freed context' : 'ok' });
+        return Promise.resolve({ timings: {} });
+      });
+      const ctx = createMockLlamaContext({
+        completion,
+        release: jest.fn().mockImplementation(async () => { released = true; }),
+      });
+      mockedInitLlama.mockResolvedValue(ctx as any);
+      await llmService.loadModel('/models/test.gguf');
+
+      // The reclaim wait reads process memory; hold that read open so the unload sits in the wait.
+      let finishReclaim: (value: null) => void = () => {};
+      const memoryRead = jest.spyOn(hardwareService, 'getProcessMemory').mockReturnValue(
+        new Promise(resolve => { finishReclaim = resolve; }),
+      );
+      const unloaded = llmService.unloadModel();
+      while (!released || memoryRead.mock.calls.length === 0) await new Promise<void>(r => setImmediate(r));
+
+      await expect(
+        llmService.generateWithMaxTokens([{ id: '1', role: 'user', content: 'mid-unload', timestamp: 0 }], 16),
+      ).rejects.toThrow('No model loaded');
+      expect(completion).not.toHaveBeenCalled();
+
+      finishReclaim(null);
+      await unloaded;
+      expect(llmService.isModelLoaded()).toBe(false);
+      memoryRead.mockRestore();
     });
   });
 

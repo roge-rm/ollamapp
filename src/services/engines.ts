@@ -136,7 +136,8 @@ export function isModelReady(model: { engine?: string; filePath?: string } | nul
   if (!model) return false;
   return model.engine === 'litert'
     ? liteRTService.isModelLoaded()
-    : llmService.isModelLoaded() && llmService.getLoadedModelPath() === model.filePath;
+    // llama: a context that stopped answering (backend fault) is not ready — the load replaces it.
+    : llmService.isContextUsable() && llmService.getLoadedModelPath() === model.filePath;
 }
 
 /**

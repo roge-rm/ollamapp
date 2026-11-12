@@ -12,6 +12,8 @@ import { useChatModelStateSync } from '../../../src/screens/ChatScreen/useChatMo
 jest.mock('../../../src/services/llm', () => ({
   llmService: {
     isModelLoaded: jest.fn(() => false),
+    // A loaded context answers unless a backend fault marked it (llmService.isContextUsable).
+    isContextUsable: jest.fn(function (this: { isModelLoaded: () => boolean }) { return this.isModelLoaded(); }),
     getMultimodalSupport: jest.fn(() => null),
     supportsToolCalling: jest.fn(() => false),
     supportsThinking: jest.fn(() => false),
