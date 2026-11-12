@@ -32,6 +32,10 @@ import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 
+/** initialize() returned, but it took longer than the backend's time limit. */
+internal class InitTimeoutException(elapsedMs: Long, timeoutMs: Long) :
+    Exception("blocking init took ${elapsedMs}ms, limit ${timeoutMs}ms")
+
 class LiteRTModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
@@ -124,6 +128,20 @@ class LiteRTModule(private val reactContext: ReactApplicationContext) :
                 if (tryInit(backend)) return backend
             }
             return null
+        }
+
+        /**
+         * Run a blocking native init on the IO pool. initialize() does not check cancellation,
+         * so a withTimeout around withContext would cancel the waiter and close the engine
+         * while clFinish is still running. Time the call after it returns: close() and the
+         * next backend tier then see a finished attempt.
+         */
+        internal suspend fun <T> runBlockingInitOnIo(timeoutMs: Long, block: () -> T): T {
+            val started = System.nanoTime()
+            val result = withContext(Dispatchers.IO) { block() }
+            val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+            if (elapsedMs > timeoutMs) throw InitTimeoutException(elapsedMs, timeoutMs)
+            return result
         }
     }
 
@@ -229,20 +247,30 @@ class LiteRTModule(private val reactContext: ReactApplicationContext) :
             eng = Engine(cfg)
             // initialize() blocks in native code (GPU program compile) for up to minutes.
             // Run it on the IO pool so it never holds a Default worker or the main thread.
-            // withTimeout cannot interrupt it; it only fails the attempt after it returns.
-            withTimeout(initTimeoutMs(backend, configuredMaxTokens)) {
-                withContext(Dispatchers.IO) { eng.initialize() }
+            // The time limit is applied after it returns, so close() is never under clFinish.
+            runBlockingInitOnIo(initTimeoutMs(backend, configuredMaxTokens)) {
+                eng.initialize()
             }
             engine = eng
             true
+        } catch (e: InitTimeoutException) {
+            Log.w(TAG, "initializeWithFallback — $name timed out: ${e.message}")
+            closeEngineAttempt(eng, name)
+            false
+        } catch (e: CancellationException) {
+            closeEngineAttempt(eng, name)
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "initializeWithFallback — $name failed: ${e.message}")
-            // Close the local engine attempt — not the module-level `engine` field,
-            // which belongs to a previous successful load and must not be touched here.
-            try { eng?.close() } catch (closeEx: Exception) {
-                Log.w(TAG, "initializeWithFallback — $name engine close error: ${closeEx.message}")
-            }
+            closeEngineAttempt(eng, name)
             false
+        }
+    }
+
+    /** Close a failed local Engine. Do not touch the module-level `engine` field. */
+    private fun closeEngineAttempt(eng: Engine?, name: String) {
+        try { eng?.close() } catch (closeEx: Exception) {
+            Log.w(TAG, "initializeWithFallback — $name engine close error: ${closeEx.message}")
         }
     }
 
