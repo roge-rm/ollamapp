@@ -112,3 +112,6 @@ CODEX.md
 .grok/
 .github/copilot-instructions.md
 docs/NEXT_AGENT_BRIEF.md
+docs/HANDOFF.md
+docs/plans/upstream-ports.md
+docs/plans/upstream-ports-review.md
