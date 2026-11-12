@@ -273,7 +273,7 @@ const ModelDetailView: React.FC<DetailProps> = ({
       ) : (
         <FlatList
           {...LIST_CLIPPING_PROPS}
-          data={modelFiles}
+          data={modelFiles
             .filter(f => f.size > 0 && !fileExceedsBudget(f.size, ramGB) && (filterState.quant === 'all' || f.name.includes(filterState.quant)))
             .sort((a, b) => {
               if (selectedModel.id === LITERT_PARENT_ID) return a.size - b.size; // curated: small-first
