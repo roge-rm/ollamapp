@@ -61,13 +61,20 @@ describe('llama.rn Contract', () => {
 
     it('accepts performance optimization options', () => {
       const perfOptions = {
-        flash_attn: true,       // Flash attention
+        flash_attn_type: 'auto' as const, // 'auto' | 'on' | 'off' (flash_attn boolean is deprecated)
         cache_type_k: 'q8_0',   // KV cache quantization
         cache_type_v: 'q8_0',
       };
 
-      expect(perfOptions.flash_attn).toBe(true);
+      expect(['auto', 'on', 'off']).toContain(perfOptions.flash_attn_type);
       expect(['q8_0', 'f16', 'f32']).toContain(perfOptions.cache_type_k);
+    });
+
+    it('accepts speculative decoding at context creation', () => {
+      // MTP uses the loaded model's draft layers. draft-simple needs a separate draft GGUF.
+      const speculative = { enabled: true, type: 'mtp' as const };
+
+      expect(['none', 'draft-mtp', 'draft-simple', 'mtp']).toContain(speculative.type);
     });
 
     it('returns context with expected properties', () => {
@@ -195,6 +202,14 @@ describe('llama.rn Contract', () => {
       };
 
       expect(options.n_predict).toBeGreaterThan(0);
+    });
+
+    it('supports n_keep when the context is full', () => {
+      const options = {
+        n_keep: 0, // tokens from the start of the prompt to keep; 0 is the default
+      };
+
+      expect(options.n_keep).toBeGreaterThanOrEqual(0);
     });
 
     it('supports repeat_penalty parameter', () => {

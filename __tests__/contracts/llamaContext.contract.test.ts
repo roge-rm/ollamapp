@@ -28,11 +28,12 @@ describe('llama.rn Contract', () => {
       n_threads: 4,
       use_mmap: true,
       vocab_only: false,
-      flash_attn: true,
+      flash_attn_type: 'auto' as const,
       cache_type_k: 'f16' as const,
       cache_type_v: 'f16' as const,
       n_ctx: 4096,
       n_gpu_layers: 99,
+      speculative: { enabled: true, type: 'mtp' as const },
     };
 
     it('should accept valid initialization parameters', async () => {
@@ -115,6 +116,7 @@ describe('llama.rn Contract', () => {
       const completionParams = {
         prompt: 'Hello, how are you?',
         n_predict: 256,
+        n_keep: 0,
         temperature: 0.7,
         top_k: 40,
         top_p: 0.95,
@@ -129,6 +131,7 @@ describe('llama.rn Contract', () => {
         expect.objectContaining({
           prompt: expect.any(String),
           n_predict: expect.any(Number),
+          n_keep: expect.any(Number),
           temperature: expect.any(Number),
           stop: expect.any(Array),
         }),
